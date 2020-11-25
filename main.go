@@ -7,15 +7,14 @@ import (
 
 	"github.com/martinv13/go-shiny/internal/shinyapp"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
 
 	shinyapp.RunShinyApp()
 
-	origin, _ := url.Parse("http://localhost:3000/")
+	origin, _ := url.Parse("http://localhost:3053/")
 
 	director := func(req *http.Request) {
 		req.Header.Add("X-Forwarded-Host", req.Host)
@@ -26,23 +25,26 @@ func main() {
 
 	proxy := &httputil.ReverseProxy{Director: director}
 
-	r := chi.NewRouter()
+	r := gin.Default()
 
-	r.Use(middleware.Logger)
+	r.Static("/assets", "./assets")
+	r.LoadHTMLGlob("templates/*")
 
-	r.Get("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello World!"))
+	r.GET("/admin", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "admin.tpl", gin.H{
+			"title": "Main website",
+		})
 	})
 
-	r.Get("/*", func(res http.ResponseWriter, req *http.Request) {
+	r.Use(func(c *gin.Context) {
 		cookie := http.Cookie{
 			Name:  "SHINYPROXY_APP",
 			Value: "test",
 		}
-		http.SetCookie(res, &cookie)
-		proxy.ServeHTTP(res, req)
+		http.SetCookie(c.Writer, &cookie)
+		proxy.ServeHTTP(c.Writer, c.Request)
 	})
 
-	http.ListenAndServe(":4000", r)
+	r.Run()
 
 }
