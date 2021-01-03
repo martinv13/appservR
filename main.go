@@ -1,50 +1,27 @@
 package main
 
 import (
-	"net/http"
-	"net/http/httputil"
-	"net/url"
+	"flag"
+	"fmt"
+	"os"
 
-	"github.com/martinv13/go-shiny/internal/shinyapp"
-
-	"github.com/gin-gonic/gin"
+	"github.com/martinv13/go-shiny/server"
+	"github.com/martinv13/go-shiny/services/appproxy"
+	"github.com/martinv13/go-shiny/services/db"
 )
 
 func main() {
-
-	shinyapp.RunShinyApp()
-
-	origin, _ := url.Parse("http://localhost:3053/")
-
-	director := func(req *http.Request) {
-		req.Header.Add("X-Forwarded-Host", req.Host)
-		req.Header.Add("X-Origin-Host", origin.Host)
-		req.URL.Scheme = "http"
-		req.URL.Host = origin.Host
+	environment := flag.String("e", "development", "")
+	flag.Usage = func() {
+		fmt.Println("Usage: server -e {mode}")
+		os.Exit(1)
 	}
-
-	proxy := &httputil.ReverseProxy{Director: director}
-
-	r := gin.Default()
-
-	r.Static("/assets", "./assets")
-	r.LoadHTMLGlob("templates/*")
-
-	r.GET("/admin", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "admin.tpl", gin.H{
-			"title": "Main website",
-		})
-	})
-
-	r.Use(func(c *gin.Context) {
-		cookie := http.Cookie{
-			Name:  "SHINYPROXY_APP",
-			Value: "test",
-		}
-		http.SetCookie(c.Writer, &cookie)
-		proxy.ServeHTTP(c.Writer, c.Request)
-	})
-
-	r.Run()
-
+	flag.Parse()
+	fmt.Println(*environment)
+	db.Init()
+	err := appproxy.StartApps()
+	if err != nil {
+		fmt.Println(err)
+	}
+	server.Init()
 }
