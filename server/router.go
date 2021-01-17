@@ -1,10 +1,7 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/services/appproxy"
@@ -15,40 +12,29 @@ func NewRouter() *gin.Engine {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
-	origin, _ := url.Parse("http://localhost:3053/")
+	router.Static("/assets", "./assets")
+	router.LoadHTMLGlob("templates/**/*")
 
-	director := func(req *http.Request) {
-		req.Header.Add("X-Forwarded-Host", req.Host)
-		req.Header.Add("X-Origin-Host", origin.Host)
-		req.URL.Scheme = "http"
-		req.URL.Host = origin.Host
-		app, _ := appproxy.MatchApp(req)
-		port, err := app.GetPort()
-		if err == nil {
-			req.URL.Host = "localhost:" + port
-		}
-		fmt.Println(app)
+	admin := router.Group("/admin")
+	{
+		admin.GET("/", func(c *gin.Context) {
+			c.Redirect(http.StatusMovedPermanently, "/admin/settings")
+		})
+		admin.GET("/settings", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "settings.tpl", gin.H{})
+		})
+		admin.GET("/apps", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "apps.tpl", gin.H{})
+		})
+		admin.GET("/users", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "users.tpl", gin.H{})
+		})
+		admin.GET("/groups", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "groups.tpl", gin.H{})
+		})
 	}
 
-	proxy := &httputil.ReverseProxy{Director: director}
-
-	router.Static("/assets", "./assets")
-	router.LoadHTMLGlob("templates/*")
-
-	router.GET("/admin", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "admin.tpl", gin.H{
-			"title": "Main website",
-		})
-	})
-
-	router.Use(func(c *gin.Context) {
-		cookie := http.Cookie{
-			Name:  "SHINYPROXY_APP",
-			Value: "test",
-		}
-		http.SetCookie(c.Writer, &cookie)
-		proxy.ServeHTTP(c.Writer, c.Request)
-	})
+	router.Use(appproxy.CreateProxy())
 
 	return router
 

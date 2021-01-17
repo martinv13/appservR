@@ -2,18 +2,18 @@
 {{template "header"}}
 
 <ul class="nav nav-tabs mt-3">
-    <li class="nav-item">
-        <a class="nav-link active" id="settings-tab" data-toggle="tab" href="#settings" role="tab" aria-controls="settings" aria-selected="true">General Settings</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" id="apps-tab" data-toggle="tab" href="#apps" role="tab" aria-controls="apps" aria-selected="false">Apps</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" id="users-tab" data-toggle="tab" href="#users" role="tab" aria-controls="users" aria-selected="false">Users</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" id="groups-tab" data-toggle="tab" href="#groups" role="tab" aria-controls="groups" aria-selected="false">Groups</a>
-    </li>
+  <li class="nav-item">
+    <a class="nav-link active" id="settings-tab" href="/admin/settings" role="tab" aria-controls="settings" aria-selected="true">General Settings</a>
+  </li>
+  <li class="nav-item">
+      <a class="nav-link" id="apps-tab" href="/admin/apps" role="tab" aria-controls="apps" aria-selected="false">Apps</a>
+  </li>
+  <li class="nav-item">
+      <a class="nav-link" id="users-tab" href="/admin/users" role="tab" aria-controls="users" aria-selected="false">Users</a>
+  </li>
+  <li class="nav-item">
+      <a class="nav-link" id="groups-tab" href="/admin/groups" role="tab" aria-controls="groups" aria-selected="false">Groups</a>
+  </li>
 </ul>
 <div class="tab-content p-3" id="adminTabContent">
     <div class="tab-pane fade show active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
