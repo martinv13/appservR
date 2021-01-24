@@ -1,0 +1,34 @@
+{{template "adminheader" .}}
+
+<div class="tab-pane active" id="apps">
+    <div id="accordion">
+      {{range $i, $e := .apps}}
+        <div class="card">
+          <div class="card-header" id="heading-{{$e.ID}}">
+              <button class="btn btn-link p-0" style="border:0" data-toggle="collapse" data-target="#collapse-{{$e.ID}}" 
+              aria-expanded="{{if $i}}false{{else}}true{{end}}" aria-controls="collapse-{{$e.ID}}">
+                {{$e.Name}}
+          </button>
+          </div>
+          <div id="collapse-{{$e.ID}}" class="collapse{{if not $i}} show{{end}}" aria-labelledby="heading-{{$e.ID}}" 
+          data-parent="#accordion">
+            <div class="card-body">
+              <form action="/admin/apps" method="POST">
+                <input type="hidden" id="ID" value="{{$e.ID}}">
+                <div class="form-group">
+                    <label for="AppPath">Path of the app</label>
+                    <input type="text" class="form-control" id="AppPath" value="{{$e.Path}}">
+                </div>
+                <div class="form-group">
+                    <label for="AppDir">Shiny app directory</label>
+                    <input type="text" class="form-control" id="AppDir" value="{{$e.AppDir}}">
+                </div>
+                <button class="btn btn-success">Save</button>
+            </form>
+            </div>
+          </div>
+        </div>
+      {{end}}
+    </div>
+</div>
+{{template "adminfooter" .}}

@@ -12,7 +12,7 @@ type ShinyAppController struct{}
 var shinyAppModel = new(models.ShinyApp)
 
 func (u ShinyAppController) Update(c *gin.Context) {
-	var app models.ShinyAppUpdate
+	var app models.ShinyAppPayload
 
 	if err := c.ShouldBind(&app); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

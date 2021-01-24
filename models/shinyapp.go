@@ -56,8 +56,14 @@ func (h ShinyApp) Delete(appID string) error {
 	}
 }
 
-func (h ShinyApp) GetAll() map[string]*ShinyApp {
-	return shinyApps
+func (h ShinyApp) GetAll() []*ShinyApp {
+	apps := make([]*ShinyApp, len(shinyApps), len(shinyApps))
+	j := 0
+	for i := range shinyApps {
+		apps[j] = shinyApps[i]
+		j++
+	}
+	return apps
 }
 
 func (h ShinyApp) Init() {

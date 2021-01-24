@@ -9,7 +9,9 @@ require (
 	github.com/codegangsta/gin v0.0.0-20171026143024-cafe2ce98974 // indirect
 	github.com/cosmtrek/air v1.21.2 // indirect
 	github.com/creack/pty v1.1.11 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fatih/color v1.10.0 // indirect
+	github.com/gin-contrib/multitemplate v0.0.0-20200916052041-666a7309d230
 	github.com/gin-gonic/gin v1.6.3
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/mattn/go-shellwords v1.0.10 // indirect

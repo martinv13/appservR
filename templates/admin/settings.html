@@ -1,0 +1,22 @@
+{{template "adminheader" .}}
+
+<div class="tab-pane fade show active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+    <div class="card">
+        <div class="card-header">Local Paths</div>
+        <div class="card-body">
+            <form action="/admin/settings" method="POST">
+                <div class="form-group">
+                    <label for="RscriptPath">Path to Rscript executable</label>
+                    <input type="text" class="form-control" id="RscriptPath">
+                </div>
+                <div class="form-group">
+                    <label for="RscriptPath">Path to Git executable (if not in PATH)</label>
+                    <input type="text" class="form-control" id="GitPath">
+                </div>
+                <button class="btn btn-success">Save</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{template "adminfooter" .}}
