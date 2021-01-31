@@ -15,17 +15,10 @@ func CreateProxy() gin.HandlerFunc {
 	director := func(req *http.Request) {}
 	proxy := &httputil.ReverseProxy{Director: director}
 
-	errorHandler := func(res http.ResponseWriter, req *http.Request, err error) {
-		res.WriteHeader(http.StatusNotFound)
-		res.Write([]byte("App not found"))
-	}
-
 	return func(c *gin.Context) {
 		app, err := MatchApp(c.Request)
 		if err != nil {
-			c.HTML(404, "appnotfound.tpl", nil)
-			c.Error(errors.New("App not found"))
-			c.Abort()
+			c.HTML(404, "appnotfound.html", nil)
 			return
 		}
 		port, err := app.GetPort()
@@ -45,6 +38,16 @@ func CreateProxy() gin.HandlerFunc {
 			Value: app.ShinyApp.ID,
 		}
 		http.SetCookie(c.Writer, &cookie)
+		modifyResponse := func(res *http.Response) error {
+			if res.StatusCode == 404 || res.StatusCode == 500 {
+				return errors.New("Error from server")
+			}
+			return nil
+		}
+		errorHandler := func(res http.ResponseWriter, req *http.Request, err error) {
+			c.HTML(404, "appnotfound.html", nil)
+		}
+		proxy.ModifyResponse = modifyResponse
 		proxy.ErrorHandler = errorHandler
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}

@@ -15,12 +15,16 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/mattn/go-shellwords v1.0.10 // indirect
-	github.com/mattn/go-sqlite3 v1.14.0
+	github.com/mattn/go-sqlite3 v1.14.5
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/satori/go.uuid v1.2.0
+	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
+	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546 // indirect
 	github.com/spf13/viper v1.4.0
 	github.com/vsouza/go-gin-boilerplate v0.0.0-20200512164730-a472d07331be
 	golang.org/x/sys v0.0.0-20201231184435-2d18734c6014 // indirect
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
+	gorm.io/driver/sqlite v1.1.4
+	gorm.io/gorm v1.20.12
 	xorm.io/xorm v1.0.5
 )

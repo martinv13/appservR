@@ -2,9 +2,12 @@ package models
 
 import (
 	"errors"
+
+	"gorm.io/gorm"
 )
 
 type User struct {
+	gorm.Model
 	Username      string
 	DisplayedName string
 	Password      string
@@ -14,15 +17,15 @@ type User struct {
 var users = map[string]*User{
 	"admin": {
 		Username:      "admin",
-		DisplayedName: "Martin",
+		DisplayedName: "Admin account",
 		Password:      "test",
 		Groups:        "admins",
 	},
-	"martin": {
-		Username:      "martin",
-		DisplayedName: "Martin",
+	"john.doe": {
+		Username:      "john.doe",
+		DisplayedName: "John Doe",
 		Password:      "test",
-		Groups:        "",
+		Groups:        "team1",
 	},
 }
 

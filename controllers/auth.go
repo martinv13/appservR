@@ -58,6 +58,26 @@ type signupInfo struct {
 
 func DoSignup() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var info signupInfo
+		err := c.ShouldBind(&info)
+		if err != nil {
+			c.HTML(http.StatusBadRequest, "signup.html",
+				gin.H{"errorMessage": "Signup failed. Please check the info provided."})
+		}
+		user := &models.UserData{}
+		err = user.LoginUser(info.Username, info.Password)
+		if err == nil {
+			token := auth.GenerateToken(user)
+			cookie := http.Cookie{
+				Name:  "token",
+				Value: token,
+			}
+			http.SetCookie(c.Writer, &cookie)
+			c.Redirect(http.StatusFound, "/admin/settings")
+		} else {
+			c.HTML(http.StatusUnauthorized, "login.html",
+				gin.H{"errorMessage": "Login failed. Please check your username and password."})
+		}
 
 	}
 }

@@ -2,22 +2,69 @@ package server
 
 import (
 	"fmt"
+	"html/template"
+	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/controllers"
+	"github.com/martinv13/go-shiny/data/assets"
+	"github.com/martinv13/go-shiny/data/templates"
 	"github.com/martinv13/go-shiny/middlewares"
 	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/services/appproxy"
 )
 
+func loadTemplate(t *template.Template, path string) (*template.Template, error) {
+	bd, err := templates.BundledTemplates.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer bd.Close()
+	list, err := bd.Readdir(-1)
+	if err != nil {
+		return nil, err
+	}
+	for _, bfi := range list {
+		if bfi.IsDir() {
+			t, err = loadTemplate(t, path+bfi.Name())
+			if err != nil {
+				return nil, err
+			}
+		} else if strings.HasSuffix(bfi.Name(), ".html") {
+			file, err := templates.Templates.Open(path + "/" + bfi.Name())
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
+			h, err := ioutil.ReadAll(file)
+			if err != nil {
+				return nil, err
+			}
+			t, err = t.New(bfi.Name()).Parse(string(h))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return t, nil
+}
+
 func NewRouter() *gin.Engine {
 	router := gin.Default()
+
+	t := template.New("")
+	t, err := loadTemplate(t, "/")
+	if err != nil {
+		panic(err)
+	}
+	router.SetHTMLTemplate(t)
+
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
-	router.Static("/assets", "./assets")
-	router.LoadHTMLGlob("templates/*/*.html")
+	router.StaticFS("/assets", &assets.Assets)
 
 	router.Use(middlewares.Auth())
 
@@ -57,7 +104,8 @@ func NewRouter() *gin.Engine {
 			c.HTML(http.StatusOK, "apps.html", gin.H{"displayedName": getName(c), "selTab": "apps", "apps": app.GetAll()})
 		})
 		admin.GET("/users", func(c *gin.Context) {
-			c.HTML(http.StatusOK, "users.html", gin.H{"displayedName": getName(c), "selTab": "users"})
+			user := models.UserData{}
+			c.HTML(http.StatusOK, "users.html", gin.H{"displayedName": getName(c), "selTab": "users", "users": user.GetAll()})
 		})
 		admin.GET("/groups", func(c *gin.Context) {
 			c.HTML(http.StatusOK, "groups.html", gin.H{"displayedName": getName(c), "selTab": "groups"})

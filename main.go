@@ -1,13 +1,15 @@
 package main
 
+//go:generate go run -tags=dev generate_assets.go
+
 import (
 	"flag"
 	"fmt"
 	"os"
 
+	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/server"
 	"github.com/martinv13/go-shiny/services/appproxy"
-	"github.com/martinv13/go-shiny/services/db"
 )
 
 func main() {
@@ -18,7 +20,7 @@ func main() {
 	}
 	flag.Parse()
 	fmt.Println(*environment)
-	db.Init()
+	models.InitDB()
 	err := appproxy.StartApps()
 	if err != nil {
 		fmt.Println(err)
