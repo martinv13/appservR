@@ -18,8 +18,10 @@
             <div class="card w-100 mb-4">
                 <div class="card-body">
                     <h5 class="card-title searchable">{{.DisplayedName}}</h5>
-                    <p><a href="" class="card-text searchable stretched-link">{{.Username}}</a></p>
-                    <span class="badge badge-pill badge-primary">{{.Groups}}</span>
+                    <p><a href="/admin/users/{{.Username}}" class="card-text searchable stretched-link">{{.Username}}</a></p>
+                    {{range .Groups}}
+                        <span class="badge badge-pill badge-primary">{{.}}</span>
+                    {{end}}
                 </div>
             </div>
         </div>

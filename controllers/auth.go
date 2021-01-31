@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/services/auth"
+	"gorm.io/gorm"
 )
 
 type loginCredentials struct {
@@ -21,8 +22,10 @@ func DoLogin() gin.HandlerFunc {
 			c.HTML(http.StatusUnauthorized, "login.html",
 				gin.H{"errorMessage": "Login failed. Please check your username and password."})
 		}
-		user := &models.UserData{}
-		err = user.LoginUser(credentials.Username, credentials.Password)
+		dbi, _ := c.Get("DB")
+		db := dbi.(*gorm.DB)
+		var user models.UserData
+		err = user.Login(db, credentials.Username, credentials.Password)
 		if err == nil {
 			token := auth.GenerateToken(user)
 			cookie := http.Cookie{
@@ -64,20 +67,22 @@ func DoSignup() gin.HandlerFunc {
 			c.HTML(http.StatusBadRequest, "signup.html",
 				gin.H{"errorMessage": "Signup failed. Please check the info provided."})
 		}
-		user := &models.UserData{}
-		err = user.LoginUser(info.Username, info.Password)
-		if err == nil {
-			token := auth.GenerateToken(user)
-			cookie := http.Cookie{
-				Name:  "token",
-				Value: token,
-			}
-			http.SetCookie(c.Writer, &cookie)
-			c.Redirect(http.StatusFound, "/admin/settings")
-		} else {
-			c.HTML(http.StatusUnauthorized, "login.html",
-				gin.H{"errorMessage": "Login failed. Please check your username and password."})
+		if info.Password != info.Password2 {
+			c.HTML(http.StatusBadRequest, "signup.html",
+				gin.H{"errorMessage": "Signup failed. Passwords do not match."})
 		}
-
+		dbi, _ := c.Get("DB")
+		db := dbi.(*gorm.DB)
+		user := models.User{
+			Username:      info.Username,
+			DisplayedName: info.DisplayedName,
+			Password:      info.Password,
+		}
+		err = user.Create(db)
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "signup.html",
+				gin.H{"errorMessage": "Signup failed. Could not create user."})
+		}
+		c.HTML(http.StatusOK, "signupsuccess.html", gin.H{})
 	}
 }

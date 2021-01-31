@@ -44,8 +44,10 @@ func AdminAuth() gin.HandlerFunc {
 			}
 		}
 		if !authorized {
-			c.Redirect(http.StatusFound, "/login")
+			c.HTML(http.StatusNotFound, "appnotfound.html", gin.H{})
+			c.Abort()
+		} else {
+			c.Next()
 		}
-		c.Next()
 	}
 }

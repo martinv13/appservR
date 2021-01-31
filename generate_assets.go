@@ -13,7 +13,6 @@ import (
 func main() {
 	err := vfsgen.Generate(assets.LocalAssets, vfsgen.Options{
 		PackageName:  "assets",
-		BuildTags:    "!dev",
 		Filename:     "data/assets/vfsdata.go",
 		VariableName: "BundledAssets",
 	})
@@ -22,7 +21,6 @@ func main() {
 	}
 	err = vfsgen.Generate(templates.LocalTemplates, vfsgen.Options{
 		PackageName:  "templates",
-		BuildTags:    "!dev",
 		Filename:     "data/templates/vfsdata.go",
 		VariableName: "BundledTemplates",
 	})

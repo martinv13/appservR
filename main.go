@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/server"
 	"github.com/martinv13/go-shiny/services/appproxy"
 )
@@ -20,7 +19,6 @@ func main() {
 	}
 	flag.Parse()
 	fmt.Println(*environment)
-	models.InitDB()
 	err := appproxy.StartApps()
 	if err != nil {
 		fmt.Println(err)

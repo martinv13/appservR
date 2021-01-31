@@ -14,6 +14,7 @@ import (
 	"github.com/martinv13/go-shiny/middlewares"
 	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/services/appproxy"
+	"gorm.io/gorm"
 )
 
 func loadTemplate(t *template.Template, path string) (*template.Template, error) {
@@ -66,6 +67,8 @@ func NewRouter() *gin.Engine {
 
 	router.StaticFS("/assets", &assets.Assets)
 
+	db := models.InitDB()
+	router.Use(middlewares.SetDB(db))
 	router.Use(middlewares.Auth())
 
 	router.GET("/login", func(c *gin.Context) {
@@ -104,8 +107,10 @@ func NewRouter() *gin.Engine {
 			c.HTML(http.StatusOK, "apps.html", gin.H{"displayedName": getName(c), "selTab": "apps", "apps": app.GetAll()})
 		})
 		admin.GET("/users", func(c *gin.Context) {
-			user := models.UserData{}
-			c.HTML(http.StatusOK, "users.html", gin.H{"displayedName": getName(c), "selTab": "users", "users": user.GetAll()})
+			var user models.UserData
+			dbi, _ := c.Get("DB")
+			db := dbi.(*gorm.DB)
+			c.HTML(http.StatusOK, "users.html", gin.H{"displayedName": getName(c), "selTab": "users", "users": user.GetAll(db)})
 		})
 		admin.GET("/groups", func(c *gin.Context) {
 			c.HTML(http.StatusOK, "groups.html", gin.H{"displayedName": getName(c), "selTab": "groups"})

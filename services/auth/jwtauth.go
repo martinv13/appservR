@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -24,11 +25,11 @@ type authCustomClaims struct {
 	jwt.StandardClaims
 }
 
-func GenerateToken(user *models.UserData) string {
+func GenerateToken(user models.UserData) string {
 	claims := &authCustomClaims{
 		user.Username,
 		user.DisplayedName,
-		user.Groups,
+		strings.Join(user.Groups, ","),
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 			Issuer:    "Go-Shiny",
