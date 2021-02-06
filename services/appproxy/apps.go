@@ -15,7 +15,7 @@ var appsByID = make(map[string]*AppProxy)
 var byPath []*AppProxy
 
 func StartApps() error {
-	appData := new(models.ShinyApp)
+	var appData models.ShinyApp
 	appData.Init()
 
 	apps := appData.GetAll()
@@ -34,7 +34,7 @@ func StartApps() error {
 	return nil
 }
 
-func MatchApp(r *http.Request) (*AppProxy, error) {
+func GetSession(r *http.Request) (*Session, error) {
 
 	reqURI, _ := url.Parse(r.RequestURI)
 
@@ -44,16 +44,25 @@ func MatchApp(r *http.Request) (*AppProxy, error) {
 
 	for i := range byPath {
 		if byPath[i].ShinyApp.Path == reqURI.Path {
-			return byPath[i], nil
+			session, err := byPath[i].GetSession("")
+			if err != nil {
+				return nil, err
+			}
+			return session, nil
 		}
 	}
 
-	cookie, err := r.Cookie("GO_SHINY_APP_ID")
+	appCookie, err := r.Cookie("go_shiny_appid")
 	if err == nil {
-		if app, ok := appsByID[cookie.Value]; ok {
-			return app, nil
+		if app, ok := appsByID[appCookie.Value]; ok {
+			sessCookie, _ := r.Cookie("go_shiny_session")
+			session, err := app.GetSession(sessCookie.Value)
+			if err != nil {
+				return nil, err
+			}
+			return session, nil
 		}
 	}
 
-	return &AppProxy{}, errors.New("No app found")
+	return nil, errors.New("No matching app found")
 }

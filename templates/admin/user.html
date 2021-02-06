@@ -1,0 +1,30 @@
+{{template "adminheader" .}}
+
+<div class="tab-pane active" id="users" role="tabpanel" aria-labelledby="users-tab">
+    <div class="card">
+        <div class="card-header">User</div>
+        <div class="card-body">
+            <form action="/admin/users/{{.username}}" method="POST">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" class="form-control" id="username" value="{{.username}}">
+                </div>
+                <div class="form-group">
+                    <label for="displayedname">Name</label>
+                    <input type="text" class="form-control" id="displayedname" value="{{.displayedName}}">
+                </div>
+                <div class="form-group">
+                    <label for="groups">Groups</label>
+                    <select class="form-control" id="groups" name="groups" multiple>
+                        {{range $group, $belongs := .groups}}
+                        <option value="{{$group}}" {{if $belongs}}selected{{end}}>{{$group}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <button class="btn btn-success">Save</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{template "adminfooter" .}}

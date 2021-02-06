@@ -1,0 +1,5 @@
+mode: prod
+server:
+  domainname: localhost
+  host: localhost
+  port: 3000

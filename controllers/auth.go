@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -8,6 +9,15 @@ import (
 	"github.com/martinv13/go-shiny/services/auth"
 	"gorm.io/gorm"
 )
+
+func GetLoggedName(c *gin.Context) string {
+	name := "unknown"
+	nameVal, ok := c.Get("displayedname")
+	if ok {
+		name = fmt.Sprintf("%s", nameVal)
+	}
+	return name
+}
 
 type loginCredentials struct {
 	Username string `form:"username"`

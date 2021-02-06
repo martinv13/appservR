@@ -19,8 +19,8 @@
                 <div class="card-body">
                     <h5 class="card-title searchable">{{.DisplayedName}}</h5>
                     <p><a href="/admin/users/{{.Username}}" class="card-text searchable stretched-link">{{.Username}}</a></p>
-                    {{range .Groups}}
-                        <span class="badge badge-pill badge-primary">{{.}}</span>
+                    {{range $group, $belongs := .Groups}}
+                        {{if $belongs}}<span class="badge badge-pill badge-primary">{{$group}}</span>{{end}}
                     {{end}}
                 </div>
             </div>

@@ -42,7 +42,18 @@ func (user *User) Create(db *gorm.DB) error {
 type UserData struct {
 	Username      string
 	DisplayedName string
-	Groups        []string
+	Groups        map[string]bool
+}
+
+func makeGroupsMap(groups []Group, userGroups []*Group) map[string]bool {
+	groupsMap := map[string]bool{}
+	for i := range groups {
+		groupsMap[groups[i].Name] = false
+	}
+	for i := range userGroups {
+		groupsMap[userGroups[i].Name] = true
+	}
+	return groupsMap
 }
 
 func (userData *UserData) Login(db *gorm.DB, username string, password string) error {
@@ -52,14 +63,16 @@ func (userData *UserData) Login(db *gorm.DB, username string, password string) e
 		return errors.New("user not found")
 	}
 	if user.Username == username && user.Password == getHash(password) {
-		groups := make([]string, len(user.Groups), len(user.Groups))
-		for i, g := range user.Groups {
-			groups[i] = g.Name
+		var groups []Group
+		err := db.Find(&groups).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("unable to retrieve groups")
 		}
+		groupsMap := makeGroupsMap(groups, user.Groups)
 		*userData = UserData{
 			Username:      user.Username,
 			DisplayedName: user.DisplayedName,
-			Groups:        groups,
+			Groups:        groupsMap,
 		}
 		fmt.Println(user)
 		return nil
@@ -68,22 +81,46 @@ func (userData *UserData) Login(db *gorm.DB, username string, password string) e
 	}
 }
 
-func (userData *UserData) GetAll(db *gorm.DB) []UserData {
+func (userData *UserData) GetAll(db *gorm.DB) ([]UserData, error) {
+	var groups []Group
+	err := db.Find(&groups).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.New("unable to retrieve groups")
+	}
 	var users []User
-	db.Preload(clause.Associations).Find(&users)
+	err = db.Preload(clause.Associations).Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
 	usersData := make([]UserData, len(users))
 	idx := 0
 	for _, user := range users {
-		groups := make([]string, len(user.Groups), len(user.Groups))
-		for i, g := range user.Groups {
-			groups[i] = g.Name
-		}
+		groupsMap := makeGroupsMap(groups, user.Groups)
 		usersData[idx] = UserData{
 			Username:      user.Username,
 			DisplayedName: user.DisplayedName,
-			Groups:        groups,
+			Groups:        groupsMap,
 		}
 		idx++
 	}
-	return usersData
+	return usersData, nil
+}
+
+func (userData *UserData) Get(db *gorm.DB, username string) error {
+	var groups []Group
+	err := db.Find(&groups).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return errors.New("unable to retrieve groups")
+	}
+
+	var user User
+	db.Preload(clause.Associations).First(&user, "username=?", username)
+	groupsMap := makeGroupsMap(groups, user.Groups)
+
+	*userData = UserData{
+		Username:      user.Username,
+		DisplayedName: user.DisplayedName,
+		Groups:        groupsMap,
+	}
+	return nil
 }

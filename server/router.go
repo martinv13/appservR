@@ -53,7 +53,7 @@ func loadTemplate(t *template.Template, path string) (*template.Template, error)
 }
 
 func NewRouter() *gin.Engine {
-	router := gin.Default()
+	router := gin.New()
 
 	t := template.New("")
 	t, err := loadTemplate(t, "/")
@@ -99,21 +99,23 @@ func NewRouter() *gin.Engine {
 			c.Redirect(http.StatusMovedPermanently, "/admin/settings")
 		})
 		admin.GET("/settings", func(c *gin.Context) {
-
-			c.HTML(http.StatusOK, "settings.html", gin.H{"displayedName": getName(c), "selTab": "settings"})
+			c.HTML(http.StatusOK, "settings.html", gin.H{"loggedUserName": getName(c), "selTab": "settings"})
 		})
 		admin.GET("/apps", func(c *gin.Context) {
 			app := models.ShinyApp{}
-			c.HTML(http.StatusOK, "apps.html", gin.H{"displayedName": getName(c), "selTab": "apps", "apps": app.GetAll()})
+			c.HTML(http.StatusOK, "apps.html", gin.H{"loggedUserName": getName(c), "selTab": "apps", "apps": app.GetAll()})
 		})
 		admin.GET("/users", func(c *gin.Context) {
 			var user models.UserData
 			dbi, _ := c.Get("DB")
 			db := dbi.(*gorm.DB)
-			c.HTML(http.StatusOK, "users.html", gin.H{"displayedName": getName(c), "selTab": "users", "users": user.GetAll(db)})
+			users, _ := user.GetAll(db)
+			c.HTML(http.StatusOK, "users.html", gin.H{"loggedUserName": getName(c), "selTab": "users", "users": users})
 		})
+		admin.GET("/users/:username", controllers.GetUser())
+
 		admin.GET("/groups", func(c *gin.Context) {
-			c.HTML(http.StatusOK, "groups.html", gin.H{"displayedName": getName(c), "selTab": "groups"})
+			c.HTML(http.StatusOK, "groups.html", gin.H{"loggedUserName": getName(c), "selTab": "groups"})
 		})
 	}
 

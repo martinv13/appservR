@@ -26,10 +26,16 @@ type authCustomClaims struct {
 }
 
 func GenerateToken(user models.UserData) string {
+	groups := []string{}
+	for group, belongs := range user.Groups {
+		if belongs {
+			groups = append(groups, group)
+		}
+	}
 	claims := &authCustomClaims{
 		user.Username,
 		user.DisplayedName,
-		strings.Join(user.Groups, ","),
+		strings.Join(groups, ","),
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 			Issuer:    "Go-Shiny",
