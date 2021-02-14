@@ -1,6 +1,6 @@
 {{template "adminheader" .}}
 
-<div class="tab-pane active" id="users" role="tabpanel" aria-labelledby="users-tab">
+<div class="tab-pane active" id="users">
     <div class="row">
         <div class="col-1"></div>
         <div class="col-10">
@@ -13,6 +13,13 @@
         </div>
     </div>
     <div class="row mt-3" id="users-row">
+        <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
+            <div class="card w-100 mb-4">
+                <div class="card-body text-center mt-4">
+                    <h5 class="card-title"><a href="/admin/users/new" class="card-text stretched-link">New User</a></h5>
+                </div>
+            </div>
+        </div>
         {{range .users}}
         <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
             <div class="card w-100 mb-4">

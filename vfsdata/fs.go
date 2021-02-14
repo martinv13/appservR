@@ -1,4 +1,4 @@
-package data
+package vfsdata
 
 import (
 	"net/http"

@@ -25,12 +25,10 @@ type authCustomClaims struct {
 	jwt.StandardClaims
 }
 
-func GenerateToken(user models.UserData) string {
+func GenerateToken(user models.User) string {
 	groups := []string{}
-	for group, belongs := range user.Groups {
-		if belongs {
-			groups = append(groups, group)
-		}
+	for _, g := range user.Groups {
+		groups = append(groups, g.Name)
 	}
 	claims := &authCustomClaims{
 		user.Username,

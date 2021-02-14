@@ -13,5 +13,7 @@ func InitDB() *gorm.DB {
 
 	db.AutoMigrate(&User{})
 
+	db.AutoMigrate(&ShinyApp{})
+
 	return db
 }

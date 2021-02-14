@@ -1,0 +1,48 @@
+{{template "adminheader" .}}
+
+<div class="tab-pane active" id="apps">
+    {{if .errorMessage}}
+    <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
+    {{end}}
+    {{if .successMessage}}
+    <div class="alert alert-success" role="alert">{{.successMessage}}</div>
+    {{end}}
+    <div class="card">
+      <div class="card-header">{{.AppName}}</div>
+      <div class="card-body">
+        <form action="/admin/apps/{{.AppName}}" method="POST">
+          <div class="form-group">
+            <label for="appname">Name of the Shiny app</label>
+            <input type="text" class="form-control" id="appname" name="appname" value="{{.AppName}}">
+          </div>
+          <div class="form-group">
+              <label for="path">Path of the app</label>
+              <input type="text" class="form-control" id="path" name="path" value="{{.Path}}">
+          </div>
+          <div class="form-group">
+              <label for="appdir">Shiny app directory</label>
+              <input type="text" class="form-control" id="appdir" name="appdir" value="{{.AppDir}}">
+          </div>
+          <div class="form-group">
+            <label for="workers">Number of process workers</label>
+            <input type="number" class="form-control" id="workers" name="workers" value="{{.Workers}}">
+          </div>
+          <div class="form-group">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="active" name="active" value="{{.Active}}">
+              <label class="form-check-label" for="active">Is active</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="restrictaccess" name="restrictaccess" value="{{.RestrictAccess}}">
+              <label class="form-check-label" for="restrictaccess">Restrict access to specific groups</label>
+            </div>
+          </div>
+          <button class="btn btn-success">Save</button>
+      </form>
+      </div>
+    </div>
+
+</div>
+{{template "adminfooter" .}}

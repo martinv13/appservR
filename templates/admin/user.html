@@ -1,17 +1,27 @@
 {{template "adminheader" .}}
 
 <div class="tab-pane active" id="users" role="tabpanel" aria-labelledby="users-tab">
+    {{if .errorMessage}}
+    <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
+    {{end}}
+    {{if .successMessage}}
+    <div class="alert alert-success" role="alert">{{.successMessage}}</div>
+    {{end}}
     <div class="card">
-        <div class="card-header">User</div>
+        <div class="card-header">{{if .displayedName}}User: {{.displayedName}}{{else}}New user{{end}}</div>
         <div class="card-body">
-            <form action="/admin/users/{{.username}}" method="POST">
+            <form action="/admin/users/{{if .username}}{{.username}}{{else}}new{{end}}" method="POST">
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" class="form-control" id="username" value="{{.username}}">
+                    <input type="text" class="form-control" id="username" name="username" value="{{.username}}">
                 </div>
                 <div class="form-group">
                     <label for="displayedname">Name</label>
-                    <input type="text" class="form-control" id="displayedname" value="{{.displayedName}}">
+                    <input type="text" class="form-control" id="displayedname" name="displayedname" value="{{.displayedName}}">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" value="">
                 </div>
                 <div class="form-group">
                     <label for="groups">Groups</label>
@@ -21,7 +31,10 @@
                         {{end}}
                     </select>
                 </div>
-                <button class="btn btn-success">Save</button>
+                <button type="submit" class="btn btn-success">Save</button>
+                {{if .username}}
+                <a class="btn btn-danger" href="/admin/users/{{.username}}/delete">Delete user</a>
+                {{end}}
             </form>
         </div>
     </div>

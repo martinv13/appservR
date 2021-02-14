@@ -5,15 +5,15 @@ package main
 import (
 	"fmt"
 
-	"github.com/martinv13/go-shiny/data/assets"
-	"github.com/martinv13/go-shiny/data/templates"
+	"github.com/martinv13/go-shiny/vfsdata/assets"
+	"github.com/martinv13/go-shiny/vfsdata/templates"
 	"github.com/shurcooL/vfsgen"
 )
 
 func main() {
 	err := vfsgen.Generate(assets.LocalAssets, vfsgen.Options{
 		PackageName:  "assets",
-		Filename:     "data/assets/vfsdata.go",
+		Filename:     "vfsdata/assets/vfsdata.go",
 		VariableName: "BundledAssets",
 	})
 	if err != nil {
@@ -21,7 +21,7 @@ func main() {
 	}
 	err = vfsgen.Generate(templates.LocalTemplates, vfsgen.Options{
 		PackageName:  "templates",
-		Filename:     "data/templates/vfsdata.go",
+		Filename:     "vfsdata/templates/vfsdata.go",
 		VariableName: "BundledTemplates",
 	})
 	if err != nil {

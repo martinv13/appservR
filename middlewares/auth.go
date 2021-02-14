@@ -14,7 +14,6 @@ func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := c.Request.Cookie("token")
 		if err == nil {
-			fmt.Println("token cookie found")
 			token, err := auth.ValidateToken(token.Value)
 			if err == nil && token.Valid {
 				claims := token.Claims.(jwt.MapClaims)
@@ -26,7 +25,6 @@ func Auth() gin.HandlerFunc {
 					groups[gs[i]] = true
 				}
 				c.Set("groups", groups)
-				fmt.Println(claims)
 			}
 		}
 	}

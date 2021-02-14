@@ -33,7 +33,7 @@ func CreateProxy() gin.HandlerFunc {
 		}
 		cookieApp := http.Cookie{
 			Name:  "go_shiny_appid",
-			Value: session.App.ShinyApp.ID,
+			Value: session.App.ShinyApp.AppName,
 			Path:  "/",
 		}
 		http.SetCookie(c.Writer, &cookieApp)

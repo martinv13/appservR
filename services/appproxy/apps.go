@@ -10,18 +10,17 @@ import (
 	"github.com/martinv13/go-shiny/models"
 )
 
-var appsByID = make(map[string]*AppProxy)
+var appsByName = make(map[string]*AppProxy)
 
 var byPath []*AppProxy
 
 func StartApps() error {
-	var appData models.ShinyApp
-	appData.Init()
+	appData := models.ShinyApp{}
 
 	apps := appData.GetAll()
 	for i := range apps {
 		app := NewAppProxy(apps[i])
-		appsByID[apps[i].ID] = app
+		appsByName[apps[i].AppName] = app
 		err := app.Start()
 		if err != nil {
 			return err
@@ -54,7 +53,7 @@ func GetSession(r *http.Request) (*Session, error) {
 
 	appCookie, err := r.Cookie("go_shiny_appid")
 	if err == nil {
-		if app, ok := appsByID[appCookie.Value]; ok {
+		if app, ok := appsByName[appCookie.Value]; ok {
 			sessCookie, _ := r.Cookie("go_shiny_session")
 			session, err := app.GetSession(sessCookie.Value)
 			if err != nil {

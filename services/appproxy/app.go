@@ -38,7 +38,7 @@ func NewAppProxy(app *models.ShinyApp) *AppProxy {
 func (appProxy *AppProxy) Start() error {
 	appProxy.mu.Lock()
 	for w := 0; w < appProxy.ShinyApp.Workers; w++ {
-		inst, err := SpawnApp(appProxy.ShinyApp.ID, appProxy.ShinyApp.AppDir)
+		inst, err := SpawnApp(appProxy.ShinyApp.AppName, appProxy.ShinyApp.AppDir)
 		if err != nil {
 			return err
 		}

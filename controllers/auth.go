@@ -34,8 +34,8 @@ func DoLogin() gin.HandlerFunc {
 		}
 		dbi, _ := c.Get("DB")
 		db := dbi.(*gorm.DB)
-		var user models.UserData
-		err = user.Login(db, credentials.Username, credentials.Password)
+		user := models.User{Username: credentials.Username, Password: credentials.Password}
+		err = user.Login(db)
 		if err == nil {
 			token := auth.GenerateToken(user)
 			cookie := http.Cookie{
@@ -76,10 +76,14 @@ func DoSignup() gin.HandlerFunc {
 		if err != nil {
 			c.HTML(http.StatusBadRequest, "signup.html",
 				gin.H{"errorMessage": "Signup failed. Please check the info provided."})
+			c.Abort()
+			return
 		}
 		if info.Password != info.Password2 {
 			c.HTML(http.StatusBadRequest, "signup.html",
 				gin.H{"errorMessage": "Signup failed. Passwords do not match."})
+			c.Abort()
+			return
 		}
 		dbi, _ := c.Get("DB")
 		db := dbi.(*gorm.DB)
@@ -92,6 +96,8 @@ func DoSignup() gin.HandlerFunc {
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "signup.html",
 				gin.H{"errorMessage": "Signup failed. Could not create user."})
+			c.Abort()
+			return
 		}
 		c.HTML(http.StatusOK, "signupsuccess.html", gin.H{})
 	}

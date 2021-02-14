@@ -9,11 +9,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/controllers"
-	"github.com/martinv13/go-shiny/data/assets"
-	"github.com/martinv13/go-shiny/data/templates"
 	"github.com/martinv13/go-shiny/middlewares"
-	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/services/appproxy"
+	"github.com/martinv13/go-shiny/vfsdata/assets"
+	"github.com/martinv13/go-shiny/vfsdata/templates"
 	"gorm.io/gorm"
 )
 
@@ -52,7 +51,7 @@ func loadTemplate(t *template.Template, path string) (*template.Template, error)
 	return t, nil
 }
 
-func NewRouter() *gin.Engine {
+func NewRouter(db *gorm.DB) *gin.Engine {
 	router := gin.New()
 
 	t := template.New("")
@@ -67,22 +66,17 @@ func NewRouter() *gin.Engine {
 
 	router.StaticFS("/assets", &assets.Assets)
 
-	db := models.InitDB()
 	router.Use(middlewares.SetDB(db))
 	router.Use(middlewares.Auth())
 
 	router.GET("/login", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", nil)
 	})
-
 	router.POST("/login", controllers.DoLogin())
-
 	router.GET("/logout", controllers.DoLogout())
-
 	router.GET("/signup", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "signup.html", nil)
 	})
-
 	router.POST("/signup", controllers.DoSignup())
 
 	admin := router.Group("/admin", middlewares.AdminAuth())
@@ -101,18 +95,16 @@ func NewRouter() *gin.Engine {
 		admin.GET("/settings", func(c *gin.Context) {
 			c.HTML(http.StatusOK, "settings.html", gin.H{"loggedUserName": getName(c), "selTab": "settings"})
 		})
-		admin.GET("/apps", func(c *gin.Context) {
-			app := models.ShinyApp{}
-			c.HTML(http.StatusOK, "apps.html", gin.H{"loggedUserName": getName(c), "selTab": "apps", "apps": app.GetAll()})
-		})
-		admin.GET("/users", func(c *gin.Context) {
-			var user models.UserData
-			dbi, _ := c.Get("DB")
-			db := dbi.(*gorm.DB)
-			users, _ := user.GetAll(db)
-			c.HTML(http.StatusOK, "users.html", gin.H{"loggedUserName": getName(c), "selTab": "users", "users": users})
-		})
+
+		admin.GET("/apps", controllers.GetShinyApps())
+		admin.GET("/apps/:appname", controllers.GetShinyApp())
+		admin.POST("/apps/:appname", controllers.UpdateShinyApp())
+		admin.GET("/apps/:appname/delete", controllers.DeleteShinyApp())
+
+		admin.GET("/users", controllers.GetUsers())
 		admin.GET("/users/:username", controllers.GetUser())
+		admin.POST("/users/:username", controllers.AdminUpdateUser())
+		admin.GET("/users/:username/delete", controllers.DeleteUser())
 
 		admin.GET("/groups", func(c *gin.Context) {
 			c.HTML(http.StatusOK, "groups.html", gin.H{"loggedUserName": getName(c), "selTab": "groups"})

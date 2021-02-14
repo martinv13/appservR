@@ -18,10 +18,12 @@ type User struct {
 	Groups        []*Group `gorm:"many2many:user_groups;"`
 }
 
+// Compute password hash for database storage
 func getHash(s string) string {
 	return fmt.Sprintf("%s", hash.Sum256([]byte(s)))
 }
 
+// Create a new user, add to admin group if it is the first user
 func (user *User) Create(db *gorm.DB) error {
 	groups := []*Group{}
 	var firstUser User
@@ -39,88 +41,139 @@ func (user *User) Create(db *gorm.DB) error {
 	return nil
 }
 
-type UserData struct {
-	Username      string
-	DisplayedName string
-	Groups        map[string]bool
+// Update user info
+func (user *User) Update(db *gorm.DB, oldUsername string) error {
+	var currentUser User
+	if user.Username == "new" {
+		return errors.New("Username cannot be 'new'")
+	}
+	err := db.First(&currentUser, "username=?", oldUsername).Error
+	if err != nil {
+		return fmt.Errorf("Update failed. Could not find user: %s", oldUsername)
+	}
+	updateMap := map[string]interface{}{
+		"Username":      user.Username,
+		"DisplayedName": user.DisplayedName,
+	}
+	if user.Password != "" {
+		updateMap["Password"] = getHash(user.Password)
+	}
+	err = db.Model(&currentUser).Updates(updateMap).Error
+	if err != nil {
+		return fmt.Errorf("Error while updating user: %s", oldUsername)
+	}
+	return nil
 }
 
-func makeGroupsMap(groups []Group, userGroups []*Group) map[string]bool {
-	groupsMap := map[string]bool{}
-	for i := range groups {
-		groupsMap[groups[i].Name] = false
+// Update or create a user as admin
+func (user *User) AdminUpdate(db *gorm.DB, oldUsername string) error {
+
+	groupNames := make([]string, len(user.Groups), len(user.Groups))
+	for i, g := range user.Groups {
+		groupNames[i] = g.Name
 	}
-	for i := range userGroups {
-		groupsMap[userGroups[i].Name] = true
+	var groups []*Group
+	err := db.Where("name IN ?", groupNames).Find(&groups).Error
+	if err != nil {
+		return fmt.Errorf("Specifying non existing groups for user: %s", oldUsername)
+	}
+	if user.Username == "new" {
+		return errors.New("Username cannot be 'new'")
+	}
+	if oldUsername == "new" {
+		user.Groups = groups
+		user.Password = getHash(user.Password)
+		err = db.Create(&user).Error
+		if err != nil {
+			return errors.New("Failed to create new user.")
+		}
+		return nil
+	}
+
+	var currentUser User
+
+	err = db.First(&currentUser, "username=?", oldUsername).Error
+	if err != nil {
+		return fmt.Errorf("Update failed. Could not find user: %s", oldUsername)
+	}
+	updateMap := map[string]interface{}{
+		"Username":      user.Username,
+		"DisplayedName": user.DisplayedName,
+	}
+	if user.Password != "" {
+		updateMap["Password"] = getHash(user.Password)
+	}
+
+	tx := db.Begin()
+	err = tx.Model(&currentUser).Updates(updateMap).Error
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("Error while updating user: %s", oldUsername)
+	}
+	err = tx.Model(&currentUser).Association("Groups").Replace(groups)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("Error while updating groups for user: %s", oldUsername)
+	}
+	tx.Commit()
+
+	return nil
+}
+
+// Function to retrieve groups as a map of boolean for the current user
+func (user *User) GroupsMap(db *gorm.DB) map[string]bool {
+	groupsMap := map[string]bool{}
+	groups, err := GetAllGroupNames(db)
+	if err != nil {
+		fmt.Println("Unable to retrieve groups")
+	}
+	for i := range groups {
+		groupsMap[groups[i]] = false
+	}
+	for i := range user.Groups {
+		groupsMap[user.Groups[i].Name] = true
 	}
 	return groupsMap
 }
 
-func (userData *UserData) Login(db *gorm.DB, username string, password string) error {
-	var user User
-	err := db.Preload(clause.Associations).First(&user, "users.username = ?", username).Error
+// Get an user and verify password
+func (user *User) Login(db *gorm.DB) error {
+	var loginUser User
+	err := db.Preload(clause.Associations).First(&loginUser, "users.username = ?", user.Username).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.New("user not found")
 	}
-	if user.Username == username && user.Password == getHash(password) {
-		var groups []Group
-		err := db.Find(&groups).Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("unable to retrieve groups")
-		}
-		groupsMap := makeGroupsMap(groups, user.Groups)
-		*userData = UserData{
-			Username:      user.Username,
-			DisplayedName: user.DisplayedName,
-			Groups:        groupsMap,
-		}
-		fmt.Println(user)
+	if loginUser.Username == user.Username && loginUser.Password == getHash(user.Password) {
+		*user = loginUser
 		return nil
 	} else {
 		return errors.New("wrong password")
 	}
 }
 
-func (userData *UserData) GetAll(db *gorm.DB) ([]UserData, error) {
-	var groups []Group
-	err := db.Find(&groups).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.New("unable to retrieve groups")
-	}
+// Get all users
+func (user *User) GetAll(db *gorm.DB) ([]User, error) {
 	var users []User
-	err = db.Preload(clause.Associations).Find(&users).Error
+	err := db.Preload(clause.Associations).Find(&users).Error
 	if err != nil {
 		return nil, err
 	}
-	usersData := make([]UserData, len(users))
-	idx := 0
-	for _, user := range users {
-		groupsMap := makeGroupsMap(groups, user.Groups)
-		usersData[idx] = UserData{
-			Username:      user.Username,
-			DisplayedName: user.DisplayedName,
-			Groups:        groupsMap,
-		}
-		idx++
-	}
-	return usersData, nil
+	return users, nil
 }
 
-func (userData *UserData) Get(db *gorm.DB, username string) error {
-	var groups []Group
-	err := db.Find(&groups).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return errors.New("unable to retrieve groups")
-	}
-
-	var user User
-	db.Preload(clause.Associations).First(&user, "username=?", username)
-	groupsMap := makeGroupsMap(groups, user.Groups)
-
-	*userData = UserData{
-		Username:      user.Username,
-		DisplayedName: user.DisplayedName,
-		Groups:        groupsMap,
+// Get one user
+func (user *User) Get(db *gorm.DB) error {
+	var selUser User
+	err := db.Preload(clause.Associations).First(&selUser, "username=?", user.Username).Error
+	*user = selUser
+	if err != nil {
+		return err
 	}
 	return nil
+}
+
+// Delete user
+func (user *User) Delete(db *gorm.DB) error {
+	err := db.Unscoped().Where("username = ?", user.Username).Delete(&user).Error
+	return err
 }
