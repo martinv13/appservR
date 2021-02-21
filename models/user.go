@@ -123,7 +123,8 @@ func (user *User) AdminUpdate(db *gorm.DB, oldUsername string) error {
 // Function to retrieve groups as a map of boolean for the current user
 func (user *User) GroupsMap(db *gorm.DB) map[string]bool {
 	groupsMap := map[string]bool{}
-	groups, err := GetAllGroupNames(db)
+	group := Group{}
+	groups, err := group.GetAllGroupNames(db)
 	if err != nil {
 		fmt.Println("Unable to retrieve groups")
 	}

@@ -2,3 +2,4 @@ go-shiny
 go-shiny.exe
 tmp
 *.db
+shinyapps

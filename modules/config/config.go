@@ -1,15 +1,24 @@
-package main
+package config
 
 import (
 	"flag"
 	"fmt"
 	"os"
 
+	"github.com/kardianos/osext"
+	"github.com/kardianos/service"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
-func loadConfig() {
+var ExecutableFolder = "."
+
+func LoadConfig() {
+
+	if !service.Interactive() {
+		exePath, _ := osext.ExecutableFolder()
+		ExecutableFolder = exePath
+	}
 
 	viper.SetDefault("server.port", 8080)
 	viper.SetDefault("server.host", "localhost")
@@ -29,11 +38,11 @@ func loadConfig() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("/etc/appname/")
 	viper.AddConfigPath("$HOME/.appname")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(ExecutableFolder)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			viper.WriteConfigAs("./config.yaml")
+			viper.WriteConfigAs(ExecutableFolder + "/config.yaml")
 		} else {
 			fmt.Println(err)
 			panic("config file cannot be read")

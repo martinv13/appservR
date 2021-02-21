@@ -7,7 +7,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/martinv13/go-shiny/services/auth"
+	"github.com/martinv13/go-shiny/modules/auth"
 )
 
 func Auth() gin.HandlerFunc {

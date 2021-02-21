@@ -1,0 +1,27 @@
+{{template "adminheader" .}}
+
+<div class="tab-pane active" id="groups" role="tabpanel" aria-labelledby="groups-tab">
+    {{if .errorMessage}}
+    <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
+    {{end}}
+    {{if .successMessage}}
+    <div class="alert alert-success" role="alert">{{.successMessage}}</div>
+    {{end}}
+    <div class="card">
+        <div class="card-header">{{if .GroupName}}User: {{.GroupName}}{{else}}New group{{end}}</div>
+        <div class="card-body">
+            <form action="/admin/groups/{{if .GroupName}}{{.GroupName}}{{else}}new{{end}}" method="POST">
+                <div class="form-group">
+                    <label for="groupname">Group Name</label>
+                    <input type="text" class="form-control" id="groupname" name="groupname" value="{{.GroupName}}">
+                </div>
+                <button type="submit" class="btn btn-success">Save</button>
+                {{if .GroupName}}
+                <a class="btn btn-danger" href="/admin/groups/{{.groupname}}/delete">Delete group</a>
+                {{end}}
+            </form>
+        </div>
+    </div>
+</div>
+
+{{template "adminfooter" .}}

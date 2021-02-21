@@ -50,7 +50,7 @@ func CreateProxy() gin.HandlerFunc {
 			return nil
 		}
 		errorHandler := func(res http.ResponseWriter, req *http.Request, err error) {
-			c.HTML(404, "appnotfound.html", nil)
+			c.HTML(404, "appnotfound.html", gin.H{"err": err.Error()})
 		}
 		proxy.ModifyResponse = modifyResponse
 		proxy.ErrorHandler = errorHandler

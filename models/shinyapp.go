@@ -3,7 +3,10 @@ package models
 import (
 	"errors"
 	"fmt"
+	"log"
+	"os"
 
+	"github.com/martinv13/go-shiny/modules/config"
 	"gorm.io/gorm"
 )
 
@@ -30,10 +33,22 @@ func (h ShinyApp) Init(db *gorm.DB) error {
 	}
 
 	if len(apps) == 0 {
+		_ = os.Mkdir(config.ExecutableFolder+"/shinyapps", os.ModeDir)
+		_ = os.Mkdir(config.ExecutableFolder+"/shinyapps/sample-app", os.ModeDir)
+		f, err := os.Create(config.ExecutableFolder + "/shinyapps/sample-app/app.R")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		_, err = f.WriteString(sampleApp)
+
+		if err != nil {
+			log.Fatal(err)
+		}
 		defaultApp := ShinyApp{
-			AppName:        "demo-app",
+			AppName:        "sample-app",
 			Path:           "/",
-			AppDir:         "C:/Users/marti/code/shiny-apps/shiny-apps/test-app",
+			AppDir:         config.ExecutableFolder + "/shinyapps/sample-app/",
 			Workers:        2,
 			Active:         true,
 			RestrictAccess: false,
@@ -163,7 +178,8 @@ func (app *ShinyApp) Delete(db *gorm.DB) error {
 // Function to retrieve groups as a map of boolean for the current app
 func (app *ShinyApp) GroupsMap(db *gorm.DB) map[string]bool {
 	groupsMap := map[string]bool{}
-	groups, err := GetAllGroupNames(db)
+	group := Group{}
+	groups, err := group.GetAllGroupNames(db)
 	if err != nil {
 		fmt.Println("Unable to retrieve groups")
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/controllers"
 	"github.com/martinv13/go-shiny/middlewares"
-	"github.com/martinv13/go-shiny/services/appproxy"
+	"github.com/martinv13/go-shiny/modules/appproxy"
 	"github.com/martinv13/go-shiny/vfsdata/assets"
 	"github.com/martinv13/go-shiny/vfsdata/templates"
 	"gorm.io/gorm"
@@ -106,9 +106,13 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 		admin.POST("/users/:username", controllers.AdminUpdateUser())
 		admin.GET("/users/:username/delete", controllers.DeleteUser())
 
-		admin.GET("/groups", func(c *gin.Context) {
-			c.HTML(http.StatusOK, "groups.html", gin.H{"loggedUserName": getName(c), "selTab": "groups"})
-		})
+		admin.GET("/groups", controllers.GetGroups())
+		admin.GET("/groups/:groupname", controllers.GetGroup())
+		admin.POST("/groups/:groupname", controllers.UpdateGroup())
+		admin.POST("/groups/:groupname/delete", controllers.DeleteGroup())
+		admin.GET("/groups/:groupname/add/:username", controllers.AddGroupMember())
+		admin.GET("/groups/:groupname/remove/:username", controllers.RemoveGroupMember())
+
 	}
 
 	router.Use(appproxy.CreateProxy())

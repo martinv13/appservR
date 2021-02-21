@@ -1,5 +1,67 @@
 {{template "adminheader" .}}
 
-<div class="tab-pane active" id="groups" role="tabpanel" aria-labelledby="groups-tab">...</div>
+<div class="tab-pane active" id="groups">
+  <div class="row">
+    <div class="col-1"></div>
+    <div class="col-10">
+        <form>
+            <div class="form-group text-center">
+                <label for="search-apps">Search groups</label>
+                <input type="text" id="search-groups" class="form-control" onkeyup="filterList()">
+            </div>
+        </form>
+    </div>
+</div>
+<div class="row mt-3" id="groups-row">
+    <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
+        <div class="card w-100 mb-4">
+            <div class="card-body">
+                <h5 class="card-title">New Group</h5>
+                <p>
+                  <a href="/admin/groups/new" class="card-text stretched-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="margin-top:-5px;" width="24" height="24" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                   </svg>
+                </a>
+              </p>
+            </div>
+        </div>
+    </div>
+    {{range .groups}}
+    <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
+        <div class="card w-100 mb-4">
+            <div class="card-body">
+                <h5 class="card-title searchable">{{.GroupName}}</h5>
+                <p><a href="/admin/groups/{{.GroupName}}" class="card-text searchable stretched-link">{{.UsersCount}} member{{if eq .UsersCount 1}}{{else}}s{{end}}</a></p>
+            </div>
+        </div>
+    </div>
+    {{end}}
+  </div>
+</div>
+
+<script>
+    function filterList() {
+      var input, filter, ul, li, a, i, txtValue;
+      input = document.getElementById('search-groups');
+      filter = input.value.toUpperCase();
+      container = document.getElementById('groups-row');
+      el = container.getElementsByClassName('col-6');
+    
+      for (i = 0; i < el.length; i++) {
+        search = [].slice.call(el[i].getElementsByClassName('searchable')).map(function(e){
+            return((e.textContent || e.innerText).toUpperCase())
+        }).join();
+        if (search.indexOf(filter) > -1) {
+          el[i].classList.remove("d-none");
+          el[i].classList.add("d-flex");
+        } else {
+          el[i].classList.remove("d-flex");
+          el[i].classList.add("d-none");
+        }
+      }
+    }
+</script>
 
 {{template "adminfooter" .}}
