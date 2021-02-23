@@ -1,8 +1,6 @@
 {{template "header" .}}
 <div class="container text-center mt-5">
     <h2>No app seems to be running here.</h2>
-    <p>Or maybe you are not allowed to see it. <a href="/login">Login</a></p>
-    {{if .err}}<blockquote>{{.err}}</blockquote>{{end}}
-
+    <p>Or maybe you are not allowed to see it. <a href="/auth/login">Login</a></p>
 </div>
 {{template "footer" .}}

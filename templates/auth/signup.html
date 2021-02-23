@@ -11,7 +11,7 @@
                             {{.errorMessage}}
                         </div>
                     {{end}}
-                    <form action="/signup" method="POST">
+                    <form method="POST">
                         <div class="form-group">
                             <label for="username">Username</label>
                             <input type="text" class="form-control" name="username">
@@ -29,7 +29,7 @@
                             <input type="password"  class="form-control" name="password2">
                         </div>
                         <button type="submit" class="btn btn-success">Signup</button>
-                        <p class="mt-2 mb-0">Already have an account? <a href="/login">Login</a></p>
+                        <p class="mt-2 mb-0">Already have an account? <a href="/auth/login">Login</a></p>
                     </form>
                 </div>
             </div>

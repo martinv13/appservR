@@ -69,17 +69,21 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 	router.Use(middlewares.SetDB(db))
 	router.Use(middlewares.Auth())
 
-	router.GET("/login", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "login.html", nil)
-	})
-	router.POST("/login", controllers.DoLogin())
-	router.GET("/logout", controllers.DoLogout())
-	router.GET("/signup", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "signup.html", nil)
-	})
-	router.POST("/signup", controllers.DoSignup())
+	auth := router.Group("/auth")
+	{
+		auth.GET("/login", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "login.html", nil)
+		})
+		auth.POST("/login", controllers.DoLogin())
+		auth.GET("/logout", controllers.DoLogout())
+		auth.GET("/signup", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "signup.html", nil)
+		})
+		auth.POST("/signup", controllers.DoSignup())
+	}
 
-	admin := router.Group("/admin", middlewares.AdminAuth())
+	admin := router.Group("/admin")
+	admin.Use(middlewares.AdminAuth())
 	{
 		getName := func(c *gin.Context) string {
 			name := "unknown"

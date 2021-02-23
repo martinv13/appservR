@@ -39,8 +39,10 @@ func DoLogin() gin.HandlerFunc {
 		if err == nil {
 			token := auth.GenerateToken(user)
 			cookie := http.Cookie{
-				Name:  "token",
-				Value: token,
+				Name:     "token",
+				Value:    token,
+				Path:     "/",
+				HttpOnly: true,
 			}
 			http.SetCookie(c.Writer, &cookie)
 			c.Redirect(http.StatusFound, "/admin/settings")

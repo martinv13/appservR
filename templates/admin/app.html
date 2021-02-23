@@ -8,28 +8,25 @@
     <div class="alert alert-success" role="alert">{{.successMessage}}</div>
     {{end}}
     <div class="card">
-      <div class="card-header">{{if .AppName}}User: {{.AppName}}{{else}}New app{{end}}</div>
+      <div class="card-header">{{.Title}}</div>
       <div class="card-body">
-        <form action="/admin/apps/{{.AppName}}" method="POST">
+        <form method="POST">
           <div class="form-group">
             <label for="appname">Name of the app</label>
-            <input type="text" class="form-control" id="appname" name="appname" value="{{.AppName}}" pattern="[0-9a-zA-Z-_]*">
+            <input type="text" class="form-control" id="appname" name="appname" value="{{.AppName}}" 
+            required pattern="[0-9a-zA-Z-_]+">
             <small class="form-text text-muted">
               The app name should contain only letters, numbers, hyphens or underscores.  
             </small>
           </div>
           <div class="form-group">
               <label for="path">Path of the app</label>
-              <input type="text" class="form-control" id="path" name="path" value="{{.Path}}">
-          </div>
-          <div class="form-group">
-              <label for="appdir">Shiny app directory</label>
-              <input type="text" class="form-control" id="appdir" name="appdir" value="{{.AppDir}}">
-          </div>
-          <div class="form-group">
-            <label for="workers">Number of process workers</label>
-            <input type="number" class="form-control" id="workers" name="workers" value="{{.Workers}}">
-          </div>
+              <input type="text" class="form-control" id="path" name="path" value="{{.Path}}" required
+                pattern="^(?!\/admin$)(?!\/admin\/)(?!\/login$)(?!\/login\/)(?!\/signup$)(?!\/signup\/)(?!\/logout$)(?!\/logout\/)\/[/.a-zA-Z0-9-_]*$">
+              <small class="form-text text-muted">
+                Should be a path starting with a "/" and not "/admin", "/login", "/signup" or "/logout".  
+              </small>
+            </div>
           <div class="form-group">
             <div class="form-check">
               <input type="checkbox" class="form-check-input" id="active" name="properties[]" value="active"{{if .Active}} checked{{end}}>
@@ -38,11 +35,30 @@
           </div>
           <div class="form-group">
             <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="restrictaccess" name="properties[]" value="restrictaccess"{{if .RestrictAccess}} checked{{end}}>
+              <input type="checkbox" class="form-check-input" id="restrict-access" name="properties[]" 
+              value="restrictaccess" onclick="toggleGroups()"{{if .RestrictAccess}} checked{{end}}>
               <label class="form-check-label" for="restrictaccess">Restrict access to specific groups</label>
             </div>
           </div>
+          <div class="form-group">
+            <label for="groups">Groups</label>
+            <select class="form-control" id="allowed-groups" name="AllowedGroups" multiple{{if .RestrictAccess}}{{else}} disabled{{end}}>
+                {{range $group, $belongs := .AllowedGroups}}
+                <option value="{{$group}}" {{if $belongs}}selected{{end}}>{{$group}}</option>
+                {{end}}
+            </select>
+          </div>
           <button class="btn btn-success">Save</button>
+          <hr>
+          <div class="form-group">
+            <label for="appdir">Shiny app directory</label>
+            <input type="text" class="form-control" id="appdir" name="appdir" value="{{.AppDir}}">
+        </div>
+        <div class="form-group">
+          <label for="workers">Number of process workers</label>
+          <input type="number" class="form-control" id="workers" name="workers" value="{{.Workers}}">
+        </div>
+
       </form>
       {{range .StdErr}}
         <div><pre>{{.}}</pre></div>
@@ -51,4 +67,13 @@
     </div>
 
 </div>
+<script>
+  function toggleGroups() {
+    if ($('#restrict-access')[0].checked) {
+      $('#allowed-groups')[0].selectize.enable();
+    } else {
+      $('#allowed-groups')[0].selectize.disable();
+    }
+  }
+</script>
 {{template "adminfooter" .}}
