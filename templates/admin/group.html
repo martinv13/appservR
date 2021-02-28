@@ -8,18 +8,37 @@
     <div class="alert alert-success" role="alert">{{.successMessage}}</div>
     {{end}}
     <div class="card">
-        <div class="card-header">{{if .GroupName}}User: {{.GroupName}}{{else}}New group{{end}}</div>
+        <div class="card-header">{{if .GroupName}}Group: {{.GroupName}}{{else}}New group{{end}}</div>
         <div class="card-body">
             <form action="/admin/groups/{{if .GroupName}}{{.GroupName}}{{else}}new{{end}}" method="POST">
                 <div class="form-group">
-                    <label for="groupname">Group Name</label>
+                    <label for="groupname">Name of the groupe</label>
                     <input type="text" class="form-control" id="groupname" name="groupname" value="{{.GroupName}}">
                 </div>
                 <button type="submit" class="btn btn-success">Save</button>
                 {{if .GroupName}}
-                <a class="btn btn-danger" href="/admin/groups/{{.groupname}}/delete">Delete group</a>
+                <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete-group-modal"{{if eq .GroupName "admins"}} disabled{{end}}>Delete group</button>
                 {{end}}
             </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="delete-group-modal" tabindex="-1" role="dialog" aria-labelledby="delete-group-model" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Delete Group</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete group <strong>{{.GroupName}}</strong>? This will not delete member users.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <a type="button" class="btn btn-danger" href="/admin/groups/{{.GroupName}}/delete">Delete</a>
+        </div>
         </div>
     </div>
 </div>

@@ -83,8 +83,8 @@ type ShinyAppSettings struct {
 	Path          string   `form:"path" binding:"required"`
 	Properties    []string `form:"properties[]"`
 	AllowedGroups []string `form:"allowedgroups"`
-	AppDir        string   `form:"appdir" binding:"required"`
-	Workers       int      `form:"workers" binding:"required"`
+	AppDir        string   `form:"appdir"`
+	Workers       int      `form:"workers"`
 }
 
 // Update or create app

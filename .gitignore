@@ -3,3 +3,4 @@ go-shiny.exe
 tmp
 *.db
 shinyapps
+config.yaml

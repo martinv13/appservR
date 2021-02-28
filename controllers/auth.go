@@ -58,6 +58,7 @@ func DoLogout() gin.HandlerFunc {
 		cookie := http.Cookie{
 			Name:  "token",
 			Value: "",
+			Path:  "/",
 		}
 		http.SetCookie(c.Writer, &cookie)
 		c.Redirect(http.StatusFound, "/")

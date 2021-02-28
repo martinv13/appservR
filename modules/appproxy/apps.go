@@ -84,6 +84,7 @@ func GetAllStatus() map[string]interface{} {
 		status[n] = map[string]interface{}{
 			"AppName":        app.ShinyApp.AppName,
 			"Title":          strings.Title(app.ShinyApp.AppName),
+			"Path":           app.ShinyApp.Path,
 			"Active":         app.ShinyApp.Active,
 			"RunningInst":    nb_running,
 			"RollingOutInst": nb_rollingout,
