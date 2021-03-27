@@ -1,11 +1,11 @@
 {{template "adminheader" .}}
 
 <div class="tab-pane active" id="users" role="tabpanel" aria-labelledby="users-tab">
-    {{if .errorMessage}}
-    <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
-    {{end}}
     {{if .successMessage}}
     <div class="alert alert-success" role="alert">{{.successMessage}}</div>
+    {{end}}
+    {{if .errorMessage}}
+    <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
     {{end}}
     <div class="card">
         <div class="card-header">{{if .displayedName}}User: {{.displayedName}}{{else}}New user{{end}}</div>

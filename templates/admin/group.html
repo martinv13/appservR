@@ -12,7 +12,7 @@
         <div class="card-body">
             <form action="/admin/groups/{{if .GroupName}}{{.GroupName}}{{else}}new{{end}}" method="POST">
                 <div class="form-group">
-                    <label for="groupname">Name of the groupe</label>
+                    <label for="groupname">Name of the group</label>
                     <input type="text" class="form-control" id="groupname" name="groupname" value="{{.GroupName}}">
                 </div>
                 <button type="submit" class="btn btn-success">Save</button>

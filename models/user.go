@@ -36,7 +36,7 @@ func (user *User) Create(db *gorm.DB) error {
 	user.AuthType = "PASSWORD"
 	err = db.Create(&user).Error
 	if err != nil {
-		return errors.New("user create failed")
+		return errors.New("Username already taken.")
 	}
 	return nil
 }

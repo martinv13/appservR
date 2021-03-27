@@ -44,15 +44,13 @@
             </svg></a>
           </div>
           {{end}}
-            <div style="background-color:{{if .RunningInst}}greenyellow{{else}}red{{end}}; position: absolute; top: 10px; right: 10px; border-radius: 6px; width: 12px; height: 12px;"></div>
+            <div style="background-color:{{if .RunningInst}}#32ae27{{else}}#d92a2a{{end}}; position: absolute; top: 10px; right: 10px; border-radius: 6px; width: 12px; height: 12px;"></div>
             <div class="card-body">
-                <h5 class="card-title searchable">{{.Title}}</h5>
-                <p>
-                  <a href="/admin/apps/{{.AppName}}" class="card-text searchable stretched-link">
+                <a href="/admin/apps/{{.AppName}}" class="card-title searchable stretched-link h5">{{.Title}}</a>
+                <p class="card-text">
                   {{if .RunningInst}}{{.RunningInst}} running instances{{else}}no running instances{{end}}
-                  </a>
                 </p>
-                <p>{{if .ConnectedUsers}}{{.ConnectedUsers}} users connected{{else}}no user connected{{end}}</p>
+                <p class="card-text">{{if .ConnectedUsers}}{{.ConnectedUsers}} users connected{{else}}no user connected{{end}}</p>
             </div>
         </div>
     </div>

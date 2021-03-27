@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -39,10 +40,10 @@ func GetGroup() gin.HandlerFunc {
 		group := models.Group{Name: groupName}
 		err := group.Get(db)
 		if err != nil {
-			c.HTML(http.StatusNotFound, "groups.html", gin.H{
+			c.HTML(http.StatusNotFound, "group.html", gin.H{
 				"selTab":         "groups",
 				"loggedUserName": GetLoggedName(c),
-				"errorMessage":   "Group not found",
+				"errorMessage":   fmt.Sprintf("Group '%s' not found.", groupName),
 			})
 			c.Abort()
 			return
@@ -63,11 +64,18 @@ func UpdateGroup() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		dbi, _ := c.Get("DB")
 		db := dbi.(*gorm.DB)
+
+		resMap := gin.H{
+			"selTab":         "groups",
+			"loggedUserName": GetLoggedName(c),
+		}
+
 		oldGroupName := c.Param("groupname")
 		var groupInfo GroupPayload
 		err := c.ShouldBind(&groupInfo)
 		if err != nil {
-			c.HTML(http.StatusBadRequest, "group.html", gin.H{"errorMessage": "Update failed. Please check provided information."})
+			resMap["errorMessage"] = "Update failed. Please check provided information."
+			c.HTML(http.StatusBadRequest, "group.html", resMap)
 			c.Abort()
 			return
 		}
@@ -75,6 +83,20 @@ func UpdateGroup() gin.HandlerFunc {
 		group := models.Group{Name: groupInfo.GroupName}
 		err = group.Update(db, oldGroupName)
 
+		if err != nil {
+			resMap["errorMessage"] = "Update failed. Please check provided information."
+			c.HTML(http.StatusBadRequest, "group.html", resMap)
+			c.Abort()
+			return
+		}
+
+		if oldGroupName == "new" {
+			resMap["successMessage"] = "Group has been created."
+		} else {
+			resMap["successMessage"] = "Group has been updated."
+		}
+		resMap["GroupName"] = group.Name
+		c.HTML(http.StatusOK, "group.html", resMap)
 	}
 }
 
@@ -101,6 +123,24 @@ func DeleteGroup() gin.HandlerFunc {
 		dbi, _ := c.Get("DB")
 		db := dbi.(*gorm.DB)
 		group := models.Group{Name: c.Param("groupname")}
-		group.Delete(db)
+		resData := gin.H{"loggedUserName": GetLoggedName(c), "selTab": "groups"}
+		err := group.Delete(db)
+		if err != nil {
+			resData["errorMessage"] = fmt.Sprintf("Could not delete group '%s'", group.Name)
+			c.HTML(http.StatusBadRequest, "group.html", resData)
+			c.Abort()
+			return
+		}
+		resData["successMessage"] = fmt.Sprintf("Group '%s' has been deleted.", group.Name)
+		group = models.Group{}
+		groups, err := group.GetAll(db)
+		if err != nil {
+			resData["errorMessage"] = "Could not retrieve groups."
+			c.HTML(http.StatusBadRequest, "groups.html", resData)
+			c.Abort()
+			return
+		}
+		resData["groups"] = groups
+		c.HTML(http.StatusOK, "groups.html", resData)
 	}
 }

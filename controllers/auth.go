@@ -98,7 +98,7 @@ func DoSignup() gin.HandlerFunc {
 		err = user.Create(db)
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "signup.html",
-				gin.H{"errorMessage": "Signup failed. Could not create user."})
+				gin.H{"errorMessage": "Signup failed. Username already taken."})
 			c.Abort()
 			return
 		}

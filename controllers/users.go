@@ -16,23 +16,36 @@ type userData struct {
 	Groups        map[string]bool
 }
 
+// Get all users in a slice of struct with a boolean map to represent groups
+func GetUsersData(db *gorm.DB) ([]userData, error) {
+	var user models.User
+	users, err := user.GetAll(db)
+	if err != nil {
+		return nil, err
+	}
+	usersData := make([]userData, len(users), len(users))
+	for i, u := range users {
+		usersData[i] = userData{Username: u.Username, DisplayedName: u.DisplayedName, Groups: u.GroupsMap(db)}
+	}
+	return usersData, nil
+}
+
 func GetUsers() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var user models.User
 		dbi, _ := c.Get("DB")
 		db := dbi.(*gorm.DB)
-		users, err := user.GetAll(db)
+		usersData, err := GetUsersData(db)
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "users.html",
-				gin.H{"loggedUserName": GetLoggedName(c), "selTab": "users", "errorMessage": "Unable to retrieve users"})
+				gin.H{"loggedUserName": GetLoggedName(c), "selTab": "users", "errorMessage": "Unable to retrieve users."})
 			c.Abort()
 			return
 		}
-		usersData := make([]userData, len(users), len(users))
-		for i, u := range users {
-			usersData[i] = userData{Username: u.Username, DisplayedName: u.DisplayedName, Groups: u.GroupsMap(db)}
-		}
-		c.HTML(http.StatusOK, "users.html", gin.H{"loggedUserName": GetLoggedName(c), "selTab": "users", "users": usersData})
+		c.HTML(http.StatusOK, "users.html", gin.H{
+			"loggedUserName": GetLoggedName(c),
+			"selTab":         "users",
+			"users":          usersData,
+		})
 	}
 }
 
@@ -58,7 +71,7 @@ func GetUser() gin.HandlerFunc {
 			c.HTML(http.StatusBadRequest, "user.html", gin.H{
 				"selTab":         "users",
 				"loggedUserName": GetLoggedName(c),
-				"errorMessage":   fmt.Sprintf("User %s not found", username),
+				"errorMessage":   fmt.Sprintf("User '%s' not found.", username),
 			})
 			c.Abort()
 			return
@@ -134,37 +147,23 @@ func DeleteUser() gin.HandlerFunc {
 		db := dbi.(*gorm.DB)
 		username := c.Param("username")
 		user := models.User{Username: username}
+		resData := gin.H{"loggedUserName": GetLoggedName(c), "selTab": "users"}
 		err := user.Delete(db)
 		if err != nil {
-			c.HTML(http.StatusBadRequest, "user.html", gin.H{
-				"selTab":         "users",
-				"loggedUserName": GetLoggedName(c),
-				"errorMessage":   "Cannot delete user",
-			})
+			resData["errorMessage"] = fmt.Sprintf("Could note delete user '%s'.", username)
+			c.HTML(http.StatusBadRequest, "user.html", resData)
 			c.Abort()
 			return
 		}
-		users, err := user.GetAll(db)
+		usersData, err := GetUsersData(db)
+		resData["successMessage"] = "User has been deleted"
 		if err != nil {
-			c.HTML(http.StatusInternalServerError, "users.html",
-				gin.H{
-					"loggedUserName": GetLoggedName(c),
-					"selTab":         "users",
-					"successMessage": "User has been deleted",
-					"errorMessage":   "Unable to retrieve users",
-				})
+			resData["errorMessage"] = "Unable to retrieve users"
+			c.HTML(http.StatusInternalServerError, "users.html", resData)
 			c.Abort()
 			return
 		}
-		usersData := make([]userData, len(users), len(users))
-		for i, u := range users {
-			usersData[i] = userData{Username: u.Username, DisplayedName: u.DisplayedName, Groups: u.GroupsMap(db)}
-		}
-		c.HTML(http.StatusOK, "users.html", gin.H{
-			"loggedUserName": GetLoggedName(c),
-			"selTab":         "users",
-			"users":          usersData,
-			"successMessage": "User has been deleted",
-		})
+		resData["users"] = usersData
+		c.HTML(http.StatusOK, "users.html", resData)
 	}
 }

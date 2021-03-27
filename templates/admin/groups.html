@@ -1,6 +1,12 @@
 {{template "adminheader" .}}
 
 <div class="tab-pane active" id="groups">
+  {{if .successMessage}}
+  <div class="alert alert-success" role="alert">{{.successMessage}}</div>
+  {{end}}
+  {{if .errorMessage}}
+  <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
+  {{end}}
   <div class="row">
     <div class="col-1"></div>
     <div class="col-10">
@@ -32,8 +38,8 @@
     <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
         <div class="card w-100 mb-4">
             <div class="card-body">
-                <h5 class="card-title searchable">{{.GroupName}}</h5>
-                <p><a href="/admin/groups/{{.GroupName}}" class="card-text searchable stretched-link">{{.UsersCount}} member{{if eq .UsersCount 1}}{{else}}s{{end}}</a></p>
+                <a href="/admin/groups/{{.GroupName}}" class="card-title searchable stretched-link h5">{{.GroupName}}</a>
+                <p class="card-text">{{.UserCount}} member{{if eq .UserCount 1}}{{else}}s{{end}}</a></p>
             </div>
         </div>
     </div>

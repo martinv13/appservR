@@ -1,6 +1,12 @@
 {{template "adminheader" .}}
 
 <div class="tab-pane active" id="users">
+    {{if .successMessage}}
+    <div class="alert alert-success" role="alert">{{.successMessage}}</div>
+    {{end}}
+    {{if .errorMessage}}
+    <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
+    {{end}}
     <div class="row">
         <div class="col-1"></div>
         <div class="col-10">
@@ -32,8 +38,8 @@
         <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
             <div class="card w-100 mb-4">
                 <div class="card-body">
-                    <h5 class="card-title searchable">{{.DisplayedName}}</h5>
-                    <p><a href="/admin/users/{{.Username}}" class="card-text searchable stretched-link">{{.Username}}</a></p>
+                    <a href="/admin/users/{{.Username}}" class="card-title h5 searchable stretched-link">{{.DisplayedName}}</a>
+                    <p class="card-text searchable">{{.Username}}</p>
                     {{range $group, $belongs := .Groups}}
                         {{if $belongs}}<span class="badge badge-pill badge-primary">{{$group}}</span>{{end}}
                     {{end}}

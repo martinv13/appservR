@@ -113,7 +113,7 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 		admin.GET("/groups", controllers.GetGroups())
 		admin.GET("/groups/:groupname", controllers.GetGroup())
 		admin.POST("/groups/:groupname", controllers.UpdateGroup())
-		admin.POST("/groups/:groupname/delete", controllers.DeleteGroup())
+		admin.GET("/groups/:groupname/delete", controllers.DeleteGroup())
 		admin.GET("/groups/:groupname/add/:username", controllers.AddGroupMember())
 		admin.GET("/groups/:groupname/remove/:username", controllers.RemoveGroupMember())
 
