@@ -13,6 +13,7 @@ import (
 	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/modules/appproxy"
 	"github.com/martinv13/go-shiny/modules/config"
+	"github.com/martinv13/go-shiny/modules/ssehandler"
 	"github.com/martinv13/go-shiny/server"
 )
 
@@ -34,12 +35,14 @@ func (p *program) run() {
 	app := models.ShinyApp{}
 	app.Init(db)
 
-	err := appproxy.StartApps()
+	stream := ssehandler.NewServer()
+
+	err := appproxy.StartApps(stream)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	server.Init(db)
+	server.Init(db, stream)
 }
 
 func (p *program) Stop(s service.Service) error {

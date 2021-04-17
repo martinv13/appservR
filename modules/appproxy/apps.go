@@ -8,18 +8,19 @@ import (
 	"strings"
 
 	"github.com/martinv13/go-shiny/models"
+	"github.com/martinv13/go-shiny/modules/ssehandler"
 )
 
 var appsByName = make(map[string]*AppProxy)
 
 var byPath []*AppProxy
 
-func StartApps() error {
+func StartApps(status *ssehandler.Event) error {
 	appData := models.ShinyApp{}
 
 	apps := appData.GetAll()
 	for i := range apps {
-		app := NewAppProxy(apps[i])
+		app := NewAppProxy(apps[i], status)
 		appsByName[apps[i].AppName] = app
 		err := app.Start()
 		if err != nil {
@@ -75,9 +76,9 @@ func GetAllStatus() map[string]interface{} {
 		nb_running := 0
 		nb_rollingout := 0
 		for _, i := range app.Instances {
-			if i.State == "RUNNING" {
+			if i.Status == "RUNNING" {
 				nb_running++
-			} else if i.State == "ROLLING_OUT" {
+			} else if i.Status == "ROLLING_OUT" {
 				nb_rollingout++
 			}
 		}
@@ -105,9 +106,9 @@ func GetStatus(appName string) (map[string]interface{}, error) {
 	nbRollingout := 0
 	stdErr := []string{}
 	for _, i := range app.Instances {
-		if i.State == "RUNNING" {
+		if i.Status == "RUNNING" {
 			nbRunning++
-		} else if i.State == "ROLLING_OUT" {
+		} else if i.Status == "ROLLING_OUT" {
 			nbRollingout++
 		}
 		stdErr = append(stdErr, i.StdErr)

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/kardianos/osext"
 	"github.com/kardianos/service"
@@ -13,6 +14,7 @@ import (
 
 var ExecutableFolder = "."
 
+// Set default config and load config from config.yml
 func LoadConfig() {
 
 	if !service.Interactive() {
@@ -23,6 +25,22 @@ func LoadConfig() {
 	viper.SetDefault("server.port", 8080)
 	viper.SetDefault("server.host", "localhost")
 	viper.SetDefault("server.name", "localhost")
+
+	// find R executable
+	RScript := "Rscript"
+	if runtime.GOOS == "windows" {
+		RPath := "C:/Program Files/R"
+		file, err := os.Open(RPath)
+		if err == nil {
+			defer file.Close()
+			names, err := file.Readdirnames(0)
+			if err == nil {
+				RScript = RPath + "/" + names[len(names)-1] + "/bin/Rscript.exe"
+			}
+		}
+	}
+
+	viper.SetDefault("RScript", RScript)
 
 	flag.String("mode", "prod", "run mode")
 

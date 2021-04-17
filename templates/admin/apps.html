@@ -36,7 +36,7 @@
     </div>
     {{range .apps}}
     <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
-        <div class="card w-100 mb-4">
+        <div class="card w-100 mb-4" id="card-{{.AppName}}">
           {{if .RunningInst}}
           <div style="position: absolute; top: 1px; right: 30px; z-index:10">
             <a href="{{.Path}}" target="_blank" class="text-decoration-none"><svg width="12" height="12">
@@ -50,7 +50,7 @@
                 <p class="card-text">
                   {{if .RunningInst}}{{.RunningInst}} running instances{{else}}no running instances{{end}}
                 </p>
-                <p class="card-text">{{if .ConnectedUsers}}{{.ConnectedUsers}} users connected{{else}}no user connected{{end}}</p>
+                <p class="card-text connected-users">{{if .ConnectedUsers}}{{.ConnectedUsers}} users connected{{else}}no user connected{{end}}</p>
             </div>
         </div>
     </div>
@@ -79,6 +79,25 @@
         }
       }
     }
+
+    var evtSource = new EventSource("/admin/apps.json");
+    evtSource.onmessage = function(e) {
+      var data = {};
+      try {
+        data = JSON.parse(e.data);
+      } catch(err) {
+        console.log(err);
+      }
+      if (data.appName) {
+        var el = document.getElementById("card-" + data.appName);
+        if (el) {
+          var status = el.querySelector(".connected-users");
+          if (status) status.innerHTML = data.value;
+        }
+      }
+
+    }
+
 </script>
 
 {{template "adminfooter" .}}

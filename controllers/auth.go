@@ -45,7 +45,7 @@ func DoLogin() gin.HandlerFunc {
 				HttpOnly: true,
 			}
 			http.SetCookie(c.Writer, &cookie)
-			c.Redirect(http.StatusFound, "/admin/settings")
+			c.Redirect(http.StatusFound, "/admin/apps")
 		} else {
 			c.HTML(http.StatusUnauthorized, "login.html",
 				gin.H{"errorMessage": "Login failed. Please check your username and password."})

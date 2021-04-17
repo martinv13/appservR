@@ -8,126 +8,127 @@
     <div class="alert alert-success" role="alert">{{.successMessage}}</div>
     {{end}}
     <form method="POST">
-      <div class="card">
-        <div class="card-header">{{.Title}}: Main Settings</div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="appname">Name of the app</label>
-            <input type="text" class="form-control" id="appname" name="appname" value="{{.AppName}}" 
-            required pattern="[0-9a-zA-Z-_]+">
-            <small class="form-text text-muted">
-              The app name should contain only letters, numbers, hyphens or underscores.  
-            </small>
-          </div>
-          <div class="form-group">
-              <label for="path">Path of the app</label>
-              <input type="text" class="form-control" id="path" name="path" value="{{.Path}}" required
-                pattern="^(?!\/admin$)(?!\/admin\/)(?!\/auth$)(?!\/auth\/)\/[/.a-zA-Z0-9-_]*$">
-              <small class="form-text text-muted">
-                Should be a path starting with a "/" and not "/admin" or "/auth"  
-              </small>
+        <div class="card">
+            <div class="card-header">{{.Title}}</div>
+            <div class="card-body">
+                <h5>Main Settings</h5>
+                <hr>
+                <div class="form-group">
+                    <label for="appname">Name of the app</label>
+                    <input type="text" class="form-control" id="appname" name="appname" value="{{.AppName}}" 
+                    required pattern="[0-9a-zA-Z-_]+">
+                    <small class="form-text text-muted">
+                        Should contain only letters, numbers, hyphens or underscores.  
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="path">Path of the app</label>
+                    <input type="text" class="form-control" id="path" name="path" value="{{.Path}}" required
+                    pattern="^(?!\/admin$)(?!\/admin\/)(?!\/auth$)(?!\/auth\/)\/[/.a-zA-Z0-9-_]*$">
+                    <small class="form-text text-muted">
+                        Should start with "/" and not "/admin" or "/auth"  
+                    </small>
+                </div>
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="active" name="properties[]" value="active"{{if .Active}} checked{{end}}>
+                        <label class="form-check-label" for="active">Is active</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="restrict-access" name="properties[]" 
+                        value="restrictaccess" onclick="toggleGroups()"{{if .RestrictAccess}} checked{{end}}>
+                        <label class="form-check-label" for="restrictaccess">Restrict access to specific groups</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="groups">Allowed groups</label>
+                    <select class="form-control" id="allowed-groups" name="AllowedGroups" multiple{{if .RestrictAccess}}{{else}} disabled{{end}}>
+                    {{range $group, $belongs := .AllowedGroups}}
+                        <option value="{{$group}}" {{if $belongs}}selected{{end}}>{{$group}}</option>
+                    {{end}}
+                    </select>
+                </div>
+                <h5>App Source</h5>
+                <hr>
+                <div class="form-group">
+                    <p>Select a source for your Shiny application code:</p>
+                    <div class="form-check">
+                        <input type="radio" name="appsource" value="directory" id="appsource-directory" checked>
+                        <label for="appsource-directory">Local or network directory</label>
+                    </div>
+                    <div class="form-check">  
+                        <input type="radio" name="appsource" value="git" id="appsource-git" disabled>
+                        <label for="appsource-git">Git repository</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="appdir">Shiny app directory</label>
+                    <input type="text" class="form-control" id="appdir" name="appdir" value="{{.AppDir}}">
+                    <small class="form-text text-muted">
+                    A directory containing the file "app.R" or "server.R" and "ui.R"  
+                    </small>  
+                </div>
+                <h5>Serving</h5>
+                <hr>
+                <div class="form-group">
+                    <label for="workers">Number of process workers</label>
+                    <input type="number" class="form-control" id="workers" name="workers" value="{{.Workers}}">
+                </div>
+                <hr>
+                <button class="btn btn-success">Save</button>
             </div>
-          <div class="form-group">
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="active" name="properties[]" value="active"{{if .Active}} checked{{end}}>
-              <label class="form-check-label" for="active">Is active</label>
-            </div>
-          </div>
-          <div class="form-group">
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="restrict-access" name="properties[]" 
-              value="restrictaccess" onclick="toggleGroups()"{{if .RestrictAccess}} checked{{end}}>
-              <label class="form-check-label" for="restrictaccess">Restrict access to specific groups</label>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="groups">Allowed groups</label>
-            <select class="form-control" id="allowed-groups" name="AllowedGroups" multiple{{if .RestrictAccess}}{{else}} disabled{{end}}>
-                {{range $group, $belongs := .AllowedGroups}}
-                <option value="{{$group}}" {{if $belongs}}selected{{end}}>{{$group}}</option>
-                {{end}}
-            </select>
-          </div>
-          <hr>
-          <button class="btn btn-success">Save</button>
-          {{if .AppName}}
-          <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete-app-modal">Delete app</button>
-          {{end}}
         </div>
-      </div>
-      <br>
-      <div class="card">
-        <div class="card-header">Source</div>
-        <div class="card-body">
-          <div class="form-group">
-            <p>Select source for application:</p>
-            <div class="form-check">
-              <input type="radio" name="appsource" value="directory" id="appsource-directory" checked>
-              <label for="appsource-directory">Local or network directory</label>
-            </div>
-            <div class="form-check">  
-              <input type="radio" name="appsource" value="git" id="appsource-git" disabled>
-              <label for="appsource-git">Git repository</label>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="appdir">Shiny app directory</label>
-            <input type="text" class="form-control" id="appdir" name="appdir" value="{{.AppDir}}">
-            <small class="form-text text-muted">
-              A folder containing the file "app.R" or "server.R" and "ui.R"  
-            </small>  
-          </div>
-          <hr>
-          <button class="btn btn-success">Save</button>
-        </div>
-      </div>
-      <br>
-      <div class="card">
-        <div class="card-header">Serving Options</div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="workers">Number of process workers</label>
-            <input type="number" class="form-control" id="workers" name="workers" value="{{.Workers}}">
-          </div>
-          <hr>
-          <button class="btn btn-success">Save</button>
-          <hr>
-          <ul class="nav nav-tabs" id="instances" role="tablist">
-            {{range $i, $e := .StdErr}}
-            <li class="nav-item" role="presentation">
-              <a class="nav-link{{if $i}}{{else}} active{{end}}" id="inst-{{$i}}-tab" data-toggle="tab" href="#inst-{{$i}}" role="tab" aria-controls="inst-{{$i}}" aria-selected="{{if $i}}false{{else}}true{{end}}">Instance #{{$i}}</a>
-            </li>
-            {{end}}
-          </ul>
-          <div class="tab-content" id="instances-content">
-            {{range $i, $e := .StdErr}}
-            <div class="tab-pane fade {{if $i}}{{else}}show active{{end}}" id="inst-{{$i}}" role="tabpanel" aria-labelledby="inst-{{$i}}-tab">
-              <br>
-              <p>Console output:</p>
-              <pre class="pre-scrollable"><code>{{$e}}</code></pre>
-            </div>
-            {{end}}  
-        </div>
-      </div>
     </form>
+    <br>
+    <div class="card">
+        <div class="card-header">Console output</div>
+        <div class="card-body">
+            <p>You can see below the R console output of all instances of your Shiny app currently running.</p>
+            <ul class="nav nav-tabs" id="instances" role="tablist">
+                {{range $i, $e := .StdErr}}
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link{{if $i}}{{else}} active{{end}}" id="inst-{{$i}}-tab" data-toggle="tab" href="#inst-{{$i}}" role="tab" aria-controls="inst-{{$i}}" aria-selected="{{if $i}}false{{else}}true{{end}}">Instance #{{$i}}</a>
+                </li>
+                {{end}}
+            </ul>
+            <div class="tab-content" id="instances-content">
+                {{range $i, $e := .StdErr}}
+                <div class="tab-pane fade {{if $i}}{{else}}show active{{end}}" id="inst-{{$i}}" role="tabpanel" aria-labelledby="inst-{{$i}}-tab">
+                    <br>
+                    <pre class="pre-scrollable" style="background-color: beige;"><code>{{$e}}</code></pre>
+                </div>
+                {{end}}  
+            </div>
+        </div>
+    </div>
+    <br>
+    <div class="card">
+        <div class="card-header">Danger zone</div>
+        <div class="card-body">
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete-app-modal">Delete app</button>
+        </div>
+    </div>
+    <br>
 </div>
 <div class="modal fade" id="delete-app-modal" tabindex="-1" role="dialog" aria-labelledby="delete-app-modal" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-      <div class="modal-header">
-          <h5 class="modal-title">Delete App</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-          </button>
-      </div>
-      <div class="modal-body">
-          <p>Are you sure you want to delete app <strong>{{.Title}}</strong>?</p>
-      </div>
-      <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-          <a type="button" class="btn btn-danger" href="/admin/apps/{{.AppName}}/delete">Delete</a>
-      </div>
-      </div>
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete App</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete app <strong>{{.Title}}</strong>?</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <a type="button" class="btn btn-danger" href="/admin/apps/{{.AppName}}/delete">Delete</a>
+        </div>
+    </div>
   </div>
 </div>
 <script>

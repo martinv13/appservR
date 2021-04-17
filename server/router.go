@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"github.com/martinv13/go-shiny/controllers"
 	"github.com/martinv13/go-shiny/middlewares"
 	"github.com/martinv13/go-shiny/modules/appproxy"
+	"github.com/martinv13/go-shiny/modules/ssehandler"
 	"github.com/martinv13/go-shiny/vfsdata/assets"
 	"github.com/martinv13/go-shiny/vfsdata/templates"
 	"gorm.io/gorm"
@@ -51,7 +51,7 @@ func loadTemplate(t *template.Template, path string) (*template.Template, error)
 	return t, nil
 }
 
-func NewRouter(db *gorm.DB) *gin.Engine {
+func NewRouter(db *gorm.DB, stream *ssehandler.Event) *gin.Engine {
 	router := gin.New()
 
 	t := template.New("")
@@ -85,25 +85,17 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 	admin := router.Group("/admin")
 	admin.Use(middlewares.AdminAuth())
 	{
-		getName := func(c *gin.Context) string {
-			name := "unknown"
-			nameVal, ok := c.Get("displayedname")
-			if ok {
-				name = fmt.Sprintf("%s", nameVal)
-			}
-			return name
-		}
 		admin.GET("/", func(c *gin.Context) {
-			c.Redirect(http.StatusMovedPermanently, "/admin/settings")
-		})
-		admin.GET("/settings", func(c *gin.Context) {
-			c.HTML(http.StatusOK, "settings.html", gin.H{"loggedUserName": getName(c), "selTab": "settings"})
+			c.Redirect(http.StatusMovedPermanently, "/admin/apps")
 		})
 
 		admin.GET("/apps", controllers.GetShinyApps())
 		admin.GET("/apps/:appname", controllers.GetShinyApp())
 		admin.POST("/apps/:appname", controllers.UpdateShinyApp())
 		admin.GET("/apps/:appname/delete", controllers.DeleteShinyApp())
+
+		router.Use(stream.ServeHTTP())
+		admin.GET("/apps.json", stream.Controller())
 
 		admin.GET("/users", controllers.GetUsers())
 		admin.GET("/users/:username", controllers.GetUser())

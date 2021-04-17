@@ -24,8 +24,16 @@ func CreateProxy() gin.HandlerFunc {
 		}
 		port := session.Instance.Port
 		origin, _ := url.Parse("http://localhost:" + port)
-		c.Request.Header.Add("X-Forwarded-Host", c.Request.Host)
-		c.Request.Header.Add("X-Origin-Host", origin.Host)
+		//		c.Request.Header.Add("X-Forwarded-Host", c.Request.Host)
+		//		c.Request.Header.Add("X-Origin-Host", origin.Host)
+
+		if username, ok := c.Get("username"); ok {
+			c.Request.Header.Set("go-shiny-username", username.(string))
+		}
+		if displayedname, ok := c.Get("displayedname"); ok {
+			c.Request.Header.Set("go-shiny-displayedname", displayedname.(string))
+		}
+
 		c.Request.URL.Scheme = "http"
 		c.Request.URL.Host = origin.Host
 		if session.App.ShinyApp.Path != "/" {

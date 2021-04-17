@@ -2,10 +2,12 @@ package appproxy
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/martinv13/go-shiny/models"
+	"github.com/martinv13/go-shiny/modules/ssehandler"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -14,23 +16,25 @@ type Session struct {
 	startedAt  int64
 	lastActive int64
 	App        *AppProxy
-	Instance   *shinyAppInstance
+	Instance   *appInstance
 }
 
 type AppProxy struct {
-	ShinyApp  *models.ShinyApp
-	Instances map[int]*shinyAppInstance
-	nextID    int
-	mu        sync.Mutex
-	Sessions  map[string]*Session
+	ShinyApp     *models.ShinyApp
+	StatusStream *ssehandler.Event
+	Instances    map[int]*appInstance
+	nextID       int
+	mu           sync.Mutex
+	Sessions     map[string]*Session
 }
 
-func NewAppProxy(app *models.ShinyApp) *AppProxy {
+func NewAppProxy(app *models.ShinyApp, stream *ssehandler.Event) *AppProxy {
 	return &AppProxy{
-		ShinyApp:  app,
-		nextID:    0,
-		Sessions:  map[string]*Session{},
-		Instances: map[int]*shinyAppInstance{},
+		ShinyApp:     app,
+		StatusStream: stream,
+		nextID:       0,
+		Sessions:     map[string]*Session{},
+		Instances:    map[int]*appInstance{},
 	}
 }
 
@@ -38,7 +42,8 @@ func NewAppProxy(app *models.ShinyApp) *AppProxy {
 func (appProxy *AppProxy) Start() error {
 	appProxy.mu.Lock()
 	for w := 0; w < appProxy.ShinyApp.Workers; w++ {
-		inst, err := SpawnApp(appProxy.ShinyApp.AppName, appProxy.ShinyApp.AppDir)
+		inst := &appInstance{App: appProxy.ShinyApp}
+		err := inst.Start()
 		if err != nil {
 			return err
 		}
@@ -53,16 +58,18 @@ func (appProxy *AppProxy) Start() error {
 // the most appropriate running instance according to current load
 func (appProxy *AppProxy) GetSession(sessionID string) (*Session, error) {
 
+	defer appProxy.reportStatus()
+
 	session, ok := appProxy.Sessions[sessionID]
 
 	if ok {
-		if session.Instance.State == "RUNNING" {
+		if session.Instance.Status == "RUNNING" {
 			session.lastActive = time.Now().Unix()
 			return session, nil
 		}
 		if len(appProxy.Instances) > 0 {
 			for _, inst := range appProxy.Instances {
-				if inst.State == "RUNNING" {
+				if inst.Status == "RUNNING" {
 					session.Instance = inst
 					session.lastActive = time.Now().Unix()
 					return session, nil
@@ -73,7 +80,7 @@ func (appProxy *AppProxy) GetSession(sessionID string) (*Session, error) {
 
 	if len(appProxy.Instances) > 0 {
 		for _, inst := range appProxy.Instances {
-			if inst.State == "RUNNING" {
+			if inst.Status == "RUNNING" {
 				now := time.Now().Unix()
 				session = &Session{
 					ID:         uuid.NewV4().String(),
@@ -93,4 +100,20 @@ func (appProxy *AppProxy) GetSession(sessionID string) (*Session, error) {
 func (sess *Session) Close() {
 	app := sess.App
 	delete(app.Sessions, sess.ID)
+	app.reportStatus()
+}
+
+func (appProxy *AppProxy) reportStatus() {
+
+	users := len(appProxy.Sessions)
+	msg := ""
+	if users == 0 {
+		msg = "no connected user"
+	} else if users == 1 {
+		msg = "1 connected user"
+	} else {
+		msg = fmt.Sprintf("%d connected users", users)
+	}
+	appProxy.StatusStream.Message <- fmt.Sprintf("{\"appName\":\"%s\", \"value\": \"%s\"}",
+		appProxy.ShinyApp.AppName, msg)
 }

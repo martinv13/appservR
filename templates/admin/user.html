@@ -8,16 +8,20 @@
     <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
     {{end}}
     <div class="card">
-        <div class="card-header">{{if .displayedName}}User: {{.displayedName}}{{else}}New user{{end}}</div>
+        <div class="card-header">{{if .displayedName}}{{.displayedName}}{{else}}New user{{end}}</div>
         <div class="card-body">
             <form action="/admin/users/{{if .username}}{{.username}}{{else}}new{{end}}" method="POST">
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" class="form-control" id="username" name="username" value="{{.username}}">
+                    <input type="text" class="form-control" id="username" name="username" 
+                    value="{{.username}}" required pattern="^[a-zA-Z0-9_-]*$">
+                    <small class="form-text text-muted">
+                        Should contain only unaccented letters, numbers, underscores or hyphens  
+                    </small>
                 </div>
                 <div class="form-group">
                     <label for="displayedname">Name</label>
-                    <input type="text" class="form-control" id="displayedname" name="displayedname" value="{{.displayedName}}">
+                    <input type="text" class="form-control" id="displayedname" name="displayedname" value="{{.displayedName}}" required>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
