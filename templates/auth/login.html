@@ -20,6 +20,7 @@
                             <label for="password">Password</label>
                             <input type="password"  class="form-control" name="password">
                         </div>
+                        <input type="hidden" name="refurl" value="{{.Referer}}">
                         <button type="submit" class="btn btn-success">Submit</button>
                         <p class="mt-2 mb-0">Don't have an account yet? <a href="/auth/signup">Signup</a></p>
                     </form>

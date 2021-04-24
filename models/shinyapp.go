@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/martinv13/go-shiny/modules/config"
 	"gorm.io/gorm"
@@ -21,7 +22,10 @@ type ShinyApp struct {
 	AllowedGroups  []*Group `gorm:"many2many:app_allowed_groups;"`
 }
 
-var shinyApps = make(map[string]*ShinyApp)
+var shinyApps = struct {
+	sync.RWMutex
+	m map[string]*ShinyApp
+}{m: make(map[string]*ShinyApp)}
 
 func (h ShinyApp) Init(db *gorm.DB) error {
 
@@ -57,16 +61,20 @@ func (h ShinyApp) Init(db *gorm.DB) error {
 		apps = append(apps, &defaultApp)
 	}
 
+	shinyApps.Lock()
 	for _, app := range apps {
-		shinyApps[app.AppName] = app
+		shinyApps.m[app.AppName] = app
 	}
+	shinyApps.Unlock()
 
 	return nil
 
 }
 
 func (app *ShinyApp) Get() error {
-	res, ok := shinyApps[app.AppName]
+	shinyApps.RLock()
+	defer shinyApps.RUnlock()
+	res, ok := shinyApps.m[app.AppName]
 	if ok {
 		*app = *res
 		return nil
@@ -75,20 +83,24 @@ func (app *ShinyApp) Get() error {
 }
 
 func (h ShinyApp) GetAll() []*ShinyApp {
-	apps := make([]*ShinyApp, len(shinyApps), len(shinyApps))
+	shinyApps.RLock()
+	defer shinyApps.RUnlock()
+	apps := make([]*ShinyApp, len(shinyApps.m), len(shinyApps.m))
 	j := 0
-	for i := range shinyApps {
-		apps[j] = shinyApps[i]
+	for i := range shinyApps.m {
+		apps[j] = shinyApps.m[i]
 		j++
 	}
 	return apps
 }
 
 func (h ShinyApp) GetAllMapSlice(db *gorm.DB) []map[string]interface{} {
-	res := make([]map[string]interface{}, len(shinyApps), len(shinyApps))
+	shinyApps.RLock()
+	defer shinyApps.RUnlock()
+	res := make([]map[string]interface{}, len(shinyApps.m), len(shinyApps.m))
 	j := 0
-	for i := range shinyApps {
-		app := shinyApps[i]
+	for i := range shinyApps.m {
+		app := shinyApps.m[i]
 		res[j] = map[string]interface{}{
 			"AppName":        app.AppName,
 			"Path":           app.Path,
@@ -158,17 +170,21 @@ func (app *ShinyApp) Update(db *gorm.DB, oldAppName string) error {
 	}
 	tx.Commit()
 
-	if _, ok := shinyApps[oldAppName]; ok {
-		delete(shinyApps, oldAppName)
+	shinyApps.Lock()
+	if _, ok := shinyApps.m[oldAppName]; ok {
+		delete(shinyApps.m, oldAppName)
 	}
-	shinyApps[app.AppName] = app
+	shinyApps.m[app.AppName] = app
+	shinyApps.Unlock()
 
 	return nil
 }
 
 func (app *ShinyApp) Delete(db *gorm.DB) error {
-	if _, ok := shinyApps[app.AppName]; ok {
-		delete(shinyApps, app.AppName)
+	shinyApps.Lock()
+	defer shinyApps.Unlock()
+	if _, ok := shinyApps.m[app.AppName]; ok {
+		delete(shinyApps.m, app.AppName)
 		return nil
 	} else {
 		return errors.New("App not found")

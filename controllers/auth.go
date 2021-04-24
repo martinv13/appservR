@@ -22,6 +22,7 @@ func GetLoggedName(c *gin.Context) string {
 type loginCredentials struct {
 	Username string `form:"username"`
 	Password string `form:"password"`
+	Referer  string `form:"refurl"`
 }
 
 func DoLogin() gin.HandlerFunc {
@@ -30,7 +31,10 @@ func DoLogin() gin.HandlerFunc {
 		err := c.ShouldBind(&credentials)
 		if err != nil {
 			c.HTML(http.StatusUnauthorized, "login.html",
-				gin.H{"errorMessage": "Login failed. Please check your username and password."})
+				gin.H{
+					"errorMessage": "Login failed. Please check your username and password.",
+					"Referer":      credentials.Referer,
+				})
 		}
 		dbi, _ := c.Get("DB")
 		db := dbi.(*gorm.DB)
@@ -45,10 +49,13 @@ func DoLogin() gin.HandlerFunc {
 				HttpOnly: true,
 			}
 			http.SetCookie(c.Writer, &cookie)
-			c.Redirect(http.StatusFound, "/admin/apps")
+			c.Redirect(http.StatusFound, credentials.Referer)
 		} else {
 			c.HTML(http.StatusUnauthorized, "login.html",
-				gin.H{"errorMessage": "Login failed. Please check your username and password."})
+				gin.H{
+					"errorMessage": "Login failed. Please check your username and password.",
+					"Referer":      credentials.Referer,
+				})
 		}
 	}
 }

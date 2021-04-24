@@ -4,7 +4,6 @@ package ssehandler
 
 import (
 	"io"
-	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,11 +12,11 @@ import (
 //and broadcasting events to those clients.
 type Event struct {
 
-	// Name of the message
-	MessageName string
-
 	// Events are pushed to this channel by the main events-gathering routine
 	Message chan string
+
+	// Keep the last message broadcasted to send it to new clients
+	LastMessage string
 
 	// New client connections
 	NewClients chan chan string
@@ -28,9 +27,6 @@ type Event struct {
 	// Total client connections
 	TotalClients map[chan string]bool
 }
-
-// New event messages are broadcast to all registered client connection channels
-type ClientChan chan string
 
 // Initialize event and Start procnteessing requests
 func NewServer() (event *Event) {
@@ -57,46 +53,7 @@ func (stream *Event) Controller() gin.HandlerFunc {
 		c.Writer.Header().Set("Connection", "keep-alive")
 		c.Writer.Header().Set("Transfer-Encoding", "chunked")
 
-		c.Stream(func(w io.Writer) bool {
-			// Stream message to client from message channel
-			if msg, ok := <-stream.Message; ok {
-				c.SSEvent("message", msg)
-				return true
-			}
-			return false
-		})
-	}
-
-}
-
-//It Listens all incoming requests from clients.
-//Handles addition and removal of clients and broadcast messages to clients.
-func (stream *Event) listen() {
-	for {
-		select {
-		// Add new available client
-		case client := <-stream.NewClients:
-			stream.TotalClients[client] = true
-			log.Printf("Client added. %d registered clients", len(stream.TotalClients))
-
-		// Remove closed client
-		case client := <-stream.ClosedClients:
-			delete(stream.TotalClients, client)
-			log.Printf("Removed client. %d registered clients", len(stream.TotalClients))
-
-		// Broadcast message to client
-		case eventMsg := <-stream.Message:
-			for clientMessageChan := range stream.TotalClients {
-				clientMessageChan <- eventMsg
-			}
-		}
-	}
-}
-
-func (stream *Event) ServeHTTP() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Initialize client channel
-		clientChan := make(ClientChan)
+		clientChan := make(chan string)
 
 		// Send new connection to event server
 		stream.NewClients <- clientChan
@@ -112,6 +69,39 @@ func (stream *Event) ServeHTTP() gin.HandlerFunc {
 			stream.ClosedClients <- clientChan
 		}()
 
-		c.Next()
+		c.Stream(func(w io.Writer) bool {
+			// Stream message to client from message channel
+			if msg, ok := <-clientChan; ok {
+				c.SSEvent("message", msg)
+				return true
+			}
+			return false
+		})
+	}
+
+}
+
+//Handles addition and removal of clients and broadcast messages to clients.
+func (stream *Event) listen() {
+	for {
+		select {
+		// Add new available client and send last message
+		case client := <-stream.NewClients:
+			stream.TotalClients[client] = true
+			client <- stream.LastMessage
+
+		// Remove closed client
+		case client := <-stream.ClosedClients:
+			delete(stream.TotalClients, client)
+
+		// Save last message and broadcast it to client
+		case eventMsg := <-stream.Message:
+			if stream.LastMessage != eventMsg {
+				stream.LastMessage = eventMsg
+				for clientMessageChan := range stream.TotalClients {
+					clientMessageChan <- eventMsg
+				}
+			}
+		}
 	}
 }

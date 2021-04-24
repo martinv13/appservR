@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -72,7 +74,15 @@ func NewRouter(db *gorm.DB, stream *ssehandler.Event) *gin.Engine {
 	auth := router.Group("/auth")
 	{
 		auth.GET("/login", func(c *gin.Context) {
-			c.HTML(http.StatusOK, "login.html", nil)
+			ref := c.Request.Header["Referer"][0]
+			fmt.Println(ref)
+			if ref != "" {
+				url, _ := url.Parse(ref)
+				ref = url.Path
+			} else {
+				ref = "/"
+			}
+			c.HTML(http.StatusOK, "login.html", gin.H{"Referer": ref})
 		})
 		auth.POST("/login", controllers.DoLogin())
 		auth.GET("/logout", controllers.DoLogout())
@@ -94,7 +104,6 @@ func NewRouter(db *gorm.DB, stream *ssehandler.Event) *gin.Engine {
 		admin.POST("/apps/:appname", controllers.UpdateShinyApp())
 		admin.GET("/apps/:appname/delete", controllers.DeleteShinyApp())
 
-		router.Use(stream.ServeHTTP())
 		admin.GET("/apps.json", stream.Controller())
 
 		admin.GET("/users", controllers.GetUsers())

@@ -1,6 +1,7 @@
 package appproxy
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -20,11 +21,11 @@ type Session struct {
 }
 
 type AppProxy struct {
+	sync.RWMutex
 	ShinyApp     *models.ShinyApp
 	StatusStream *ssehandler.Event
 	Instances    map[int]*appInstance
 	nextID       int
-	mu           sync.Mutex
 	Sessions     map[string]*Session
 }
 
@@ -40,7 +41,8 @@ func NewAppProxy(app *models.ShinyApp, stream *ssehandler.Event) *AppProxy {
 
 // Start initializes and starts app subprocesses instances
 func (appProxy *AppProxy) Start() error {
-	appProxy.mu.Lock()
+	appProxy.Lock()
+	defer appProxy.Unlock()
 	for w := 0; w < appProxy.ShinyApp.Workers; w++ {
 		inst := &appInstance{App: appProxy.ShinyApp}
 		err := inst.Start()
@@ -50,15 +52,17 @@ func (appProxy *AppProxy) Start() error {
 		appProxy.Instances[appProxy.nextID] = inst
 		appProxy.nextID++
 	}
-	appProxy.mu.Unlock()
 	return nil
 }
 
 // GetSession returns an existing session or a new session and selects
 // the most appropriate running instance according to current load
 func (appProxy *AppProxy) GetSession(sessionID string) (*Session, error) {
-
-	defer appProxy.reportStatus()
+	appProxy.Lock()
+	defer func() {
+		appProxy.Unlock()
+		appProxy.reportStatus()
+	}()
 
 	session, ok := appProxy.Sessions[sessionID]
 
@@ -99,12 +103,15 @@ func (appProxy *AppProxy) GetSession(sessionID string) (*Session, error) {
 
 func (sess *Session) Close() {
 	app := sess.App
+	app.Lock()
 	delete(app.Sessions, sess.ID)
+	app.Unlock()
 	app.reportStatus()
 }
 
 func (appProxy *AppProxy) reportStatus() {
-
+	appProxy.RLock()
+	defer appProxy.RUnlock()
 	users := len(appProxy.Sessions)
 	msg := ""
 	if users == 0 {
@@ -114,6 +121,9 @@ func (appProxy *AppProxy) reportStatus() {
 	} else {
 		msg = fmt.Sprintf("%d connected users", users)
 	}
-	appProxy.StatusStream.Message <- fmt.Sprintf("{\"appName\":\"%s\", \"value\": \"%s\"}",
-		appProxy.ShinyApp.AppName, msg)
+	msgData, _ := json.Marshal(map[string]string{
+		"appName": appProxy.ShinyApp.AppName,
+		"value":   msg,
+	})
+	appProxy.StatusStream.Message <- string(msgData)
 }
