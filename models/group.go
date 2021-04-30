@@ -15,9 +15,31 @@ type Group struct {
 	string
 }
 
-func (group *Group) GetAllGroupNames(db *gorm.DB) ([]string, error) {
+type GroupModel interface {
+	AllNames() ([]string, error)
+	All() ([]map[string]interface{}, error)
+	FindByName(groupName string) (*Group, error)
+	Save(group *Group, oldGroupName string) error
+	Delete(group *Group) error
+	AddMember(groupName string, username string) error
+	RemoveMember(groupName string, username string) error
+}
+
+type GroupModelDB struct {
+	DB *gorm.DB
+}
+
+// Provider for a group data model
+func NewGroupModelDB(db *gorm.DB) *GroupModelDB {
+	return &GroupModelDB{
+		DB: db,
+	}
+}
+
+// Get all group names
+func (m *GroupModelDB) AllNames() ([]string, error) {
 	var groups []Group
-	err := db.Find(&groups).Error
+	err := m.DB.Find(&groups).Error
 	if err != nil {
 		return []string{}, err
 	}
@@ -28,9 +50,10 @@ func (group *Group) GetAllGroupNames(db *gorm.DB) ([]string, error) {
 	return groupNames, nil
 }
 
-func (group *Group) GetAll(db *gorm.DB) ([]map[string]interface{}, error) {
+// Get all groups
+func (m *GroupModelDB) All() ([]map[string]interface{}, error) {
 	var groups []Group
-	err := db.Preload(clause.Associations).Find(&groups).Error
+	err := m.DB.Preload(clause.Associations).Find(&groups).Error
 	if err != nil {
 		return nil, err
 	}
@@ -44,47 +67,64 @@ func (group *Group) GetAll(db *gorm.DB) ([]map[string]interface{}, error) {
 	return groupsSummary, nil
 }
 
-func (group *Group) Get(db *gorm.DB) error {
-	err := db.Preload(clause.Associations).First(&group, "groups.name=?", group.Name).Error
+// Get a specific group with member users
+func (m *GroupModelDB) FindByName(groupName string) (*Group, error) {
+	var group Group
+	err := m.DB.Preload(clause.Associations).First(&group, "name=?", groupName).Error
 	if err != nil {
-		return fmt.Errorf("Could not find group: %s", group.Name)
+		return nil, fmt.Errorf("Could not find group: %s", groupName)
 	}
-	return nil
+	return &group, nil
 }
 
-func (group *Group) Update(db *gorm.DB, oldGroupName string) error {
+// Save group info to the database
+func (m *GroupModelDB) Save(group *Group, oldGroupName string) error {
+
+	if oldGroupName == "admins" || group.Name == "admins" {
+		return errors.New("Admins group cannot be modified.")
+	}
 	if group.Name == "new" {
 		return errors.New("Group name cannot be 'new'")
 	}
+
 	if oldGroupName == "new" {
-		err := db.Create(&group).Error
+		err := m.DB.Create(&group).Error
 		if err != nil {
 			return errors.New("Group already exists.")
 		}
 		return nil
 	}
 	var currentGroup Group
-	err := db.Preload(clause.Associations).First(&currentGroup, "groups.name=?", oldGroupName).Error
+	err := m.DB.Preload(clause.Associations).First(&currentGroup, "groups.name=?", oldGroupName).Error
 	if err != nil {
 		return fmt.Errorf("Update failed. Could not find group: %s", oldGroupName)
 	}
 	updateMap := map[string]interface{}{"Name": group.Name}
-	err = db.Model(&currentGroup).Updates(updateMap).Error
+	err = m.DB.Model(&currentGroup).Updates(updateMap).Error
 	if err != nil {
 		return fmt.Errorf("Error while updating group: %s", oldGroupName)
 	}
 	return nil
 }
 
-func (group *Group) Delete(db *gorm.DB) error {
-	err := db.Unscoped().Where("name = ?", group.Name).Delete(&group).Error
-	return err
-}
-
-func (group *Group) AddMember(db *gorm.DB, username string) error {
+// Delete a specific group
+func (m *GroupModelDB) Delete(group *Group) error {
+	if group.Name == "admins" {
+		return errors.New("Group 'admins' cannot be deleted")
+	}
+	err := m.DB.Unscoped().Where("name = ?", group.Name).Delete(&group).Error
+	if err != nil {
+		return errors.New("Error while deleting group")
+	}
 	return nil
 }
 
-func (group *Group) RemoveMember(db *gorm.DB, username string) error {
+// Add a member to a specific group
+func (m *GroupModelDB) AddMember(groupName string, username string) error {
+	return nil
+}
+
+// Remove a member from a group
+func (m *GroupModelDB) RemoveMember(groupName string, username string) error {
 	return nil
 }

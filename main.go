@@ -8,13 +8,9 @@ import (
 
 	"fmt"
 
-	"github.com/kardianos/service"
+	"runtime/debug"
 
-	"github.com/martinv13/go-shiny/models"
-	"github.com/martinv13/go-shiny/modules/appproxy"
-	"github.com/martinv13/go-shiny/modules/config"
-	"github.com/martinv13/go-shiny/modules/ssehandler"
-	"github.com/martinv13/go-shiny/server"
+	"github.com/kardianos/service"
 )
 
 var logger service.Logger
@@ -28,21 +24,14 @@ func (p *program) Start(s service.Service) error {
 
 func (p *program) run() {
 
-	config.LoadConfig()
+	server, err := InitializeServer()
 
-	db := models.InitDB()
-
-	app := models.ShinyApp{}
-	app.Init(db)
-
-	stream := ssehandler.NewServer()
-
-	err := appproxy.StartApps(stream)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 
-	server.Init(db, stream)
+	server.Start()
+
 }
 
 func (p *program) Stop(s service.Service) error {
@@ -50,6 +39,13 @@ func (p *program) Stop(s service.Service) error {
 }
 
 func main() {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("stacktrace from panic: \n" + string(debug.Stack()))
+		}
+	}()
+
 	svcConfig := &service.Config{
 		Name:        "go-shiny-server",
 		DisplayName: "Go-Shiny-Server",

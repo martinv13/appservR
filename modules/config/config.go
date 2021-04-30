@@ -12,59 +12,79 @@ import (
 	"github.com/spf13/viper"
 )
 
-var ExecutableFolder = "."
+type Config struct {
+	ExecutableFolder string
+	v                *viper.Viper
+}
 
-// Set default config and load config from config.yml
-func LoadConfig() {
+func NewConfig() (*Config, error) {
+
+	c := &Config{
+		ExecutableFolder: ".",
+	}
+
+	c.v = viper.New()
 
 	if !service.Interactive() {
 		exePath, _ := osext.ExecutableFolder()
-		ExecutableFolder = exePath
+		c.ExecutableFolder = exePath
 	}
 
-	viper.SetDefault("server.port", 8080)
-	viper.SetDefault("server.host", "localhost")
-	viper.SetDefault("server.name", "localhost")
+	c.v.SetDefault("server.port", 8080)
+	c.v.SetDefault("server.host", "localhost")
+	c.v.SetDefault("server.name", "localhost")
 
 	// find R executable
 	RScript := "Rscript"
 	if runtime.GOOS == "windows" {
 		RPath := "C:/Program Files/R"
 		file, err := os.Open(RPath)
-		if err == nil {
-			defer file.Close()
-			names, err := file.Readdirnames(0)
-			if err == nil {
-				RScript = RPath + "/" + names[len(names)-1] + "/bin/Rscript.exe"
-			}
+		if err != nil {
+			return nil, err
 		}
+		defer file.Close()
+		names, err := file.Readdirnames(0)
+		if err != nil {
+			return nil, err
+		}
+		RScript = RPath + "/" + names[len(names)-1] + "/bin/Rscript.exe"
 	}
 
-	viper.SetDefault("RScript", RScript)
+	c.v.SetDefault("RScript", RScript)
+
+	c.v.SetDefault("database.type", "sqlite")
+	c.v.SetDefault("database.path", c.ExecutableFolder+"/data.db")
 
 	flag.String("mode", "prod", "run mode")
 
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
-	viper.BindPFlags(pflag.CommandLine)
+	c.v.BindPFlags(pflag.CommandLine)
 
 	flag.Usage = func() {
 		fmt.Println("Usage: server -mode {mode}")
 		os.Exit(1)
 	}
 
-	viper.SetConfigName("config")
-	viper.AddConfigPath("/etc/appname/")
-	viper.AddConfigPath("$HOME/.appname")
-	viper.AddConfigPath(ExecutableFolder)
+	c.v.SetConfigName("config")
+	c.v.AddConfigPath("/etc/appname/")
+	c.v.AddConfigPath("$HOME/.appname")
+	c.v.AddConfigPath(c.ExecutableFolder)
 
-	if err := viper.ReadInConfig(); err != nil {
+	if err := c.v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			viper.WriteConfigAs(ExecutableFolder + "/config.yaml")
+			c.v.WriteConfigAs(c.ExecutableFolder + "/config.yaml")
 		} else {
-			fmt.Println(err)
-			panic("config file cannot be read")
+			return nil, err
 		}
 	}
+	return c, nil
+}
 
+func (c *Config) GetString(key string) string {
+	return c.v.GetString(key)
+}
+
+func (c *Config) Set(key string, val interface{}) {
+	c.v.Set(key, val)
 }

@@ -15,7 +15,7 @@
                 <hr>
                 <div class="form-group">
                     <label for="appname">Name of the app</label>
-                    <input type="text" class="form-control" id="appname" name="appname" value="{{.AppName}}" 
+                    <input type="text" class="form-control" id="appname" name="appname" value="{{.AppSettings.AppName}}" 
                     required pattern="[0-9a-zA-Z-_]+">
                     <small class="form-text text-muted">
                         Should contain only letters, numbers, hyphens or underscores.  
@@ -23,7 +23,7 @@
                 </div>
                 <div class="form-group">
                     <label for="path">Path of the app</label>
-                    <input type="text" class="form-control" id="path" name="path" value="{{.Path}}" required
+                    <input type="text" class="form-control" id="path" name="path" value="{{.AppSettings.Path}}" required
                     pattern="^(?!\/admin$)(?!\/admin\/)(?!\/auth$)(?!\/auth\/)\/[/.a-zA-Z0-9-_]*$">
                     <small class="form-text text-muted">
                         Should start with "/" and not "/admin" or "/auth"  
@@ -31,21 +31,21 @@
                 </div>
                 <div class="form-group">
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="active" name="properties[]" value="active"{{if .Active}} checked{{end}}>
+                        <input type="checkbox" class="form-check-input" id="active" name="properties[]" value="active"{{if .AppSettings.Active}} checked{{end}}>
                         <label class="form-check-label" for="active">Is active</label>
                     </div>
                 </div>
                 <div class="form-group">
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="restrict-access" name="properties[]" 
-                        value="restrictaccess" onclick="toggleGroups()"{{if .RestrictAccess}} checked{{end}}>
+                        value="restrictaccess" onclick="toggleGroups()"{{if .AppSettings.RestrictAccess}} checked{{end}}>
                         <label class="form-check-label" for="restrictaccess">Restrict access to specific groups</label>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="groups">Allowed groups</label>
-                    <select class="form-control" id="allowed-groups" name="AllowedGroups" multiple{{if .RestrictAccess}}{{else}} disabled{{end}}>
-                    {{range $group, $belongs := .AllowedGroups}}
+                    <select class="form-control" id="allowed-groups" name="AllowedGroups" multiple{{if .AppSettings.RestrictAccess}}{{else}} disabled{{end}}>
+                    {{range $group, $belongs := .AppSettings.AllowedGroups}}
                         <option value="{{$group}}" {{if $belongs}}selected{{end}}>{{$group}}</option>
                     {{end}}
                     </select>
@@ -65,7 +65,7 @@
                 </div>
                 <div class="form-group">
                     <label for="appdir">Shiny app directory</label>
-                    <input type="text" class="form-control" id="appdir" name="appdir" value="{{.AppDir}}">
+                    <input type="text" class="form-control" id="appdir" name="appdir" value="{{.AppSettings.AppDir}}">
                     <small class="form-text text-muted">
                     A directory containing the file "app.R" or "server.R" and "ui.R"  
                     </small>  
@@ -74,7 +74,7 @@
                 <hr>
                 <div class="form-group">
                     <label for="workers">Number of process workers</label>
-                    <input type="number" class="form-control" id="workers" name="workers" value="{{.Workers}}">
+                    <input type="number" class="form-control" id="workers" name="workers" value="{{.AppSettings.Workers}}">
                 </div>
                 <hr>
                 <button class="btn btn-success">Save</button>
@@ -87,14 +87,14 @@
         <div class="card-body">
             <p>You can see below the R console output of all instances of your Shiny app currently running.</p>
             <ul class="nav nav-tabs" id="instances" role="tablist">
-                {{range $i, $e := .StdErr}}
+                {{range $i, $e := .Status.StdErr}}
                 <li class="nav-item" role="presentation">
                     <a class="nav-link{{if $i}}{{else}} active{{end}}" id="inst-{{$i}}-tab" data-toggle="tab" href="#inst-{{$i}}" role="tab" aria-controls="inst-{{$i}}" aria-selected="{{if $i}}false{{else}}true{{end}}">Instance #{{$i}}</a>
                 </li>
                 {{end}}
             </ul>
             <div class="tab-content" id="instances-content">
-                {{range $i, $e := .StdErr}}
+                {{range $i, $e := .Status.StdErr}}
                 <div class="tab-pane fade {{if $i}}{{else}}show active{{end}}" id="inst-{{$i}}" role="tabpanel" aria-labelledby="inst-{{$i}}-tab">
                     <br>
                     <pre class="pre-scrollable" style="background-color: beige;"><code>{{$e}}</code></pre>
@@ -126,7 +126,7 @@
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <a type="button" class="btn btn-danger" href="/admin/apps/{{.AppName}}/delete">Delete</a>
+            <a type="button" class="btn btn-danger" href="/admin/apps/{{.AppSettings.AppName}}/delete">Delete</a>
         </div>
     </div>
   </div>

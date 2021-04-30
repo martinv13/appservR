@@ -6,55 +6,63 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/martinv13/go-shiny/models"
+	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/martinv13/go-shiny/modules/ssehandler"
 )
 
-var appsByName = make(map[string]*AppProxy)
-
-var byPath []*AppProxy
-
-func StartApps(status *ssehandler.Event) error {
-	appData := models.ShinyApp{}
-
-	apps := appData.GetAll()
-	for i := range apps {
-		app := NewAppProxy(apps[i], status)
-		appsByName[apps[i].AppName] = app
-		err := app.Start()
-		if err != nil {
-			return err
-		}
-		byPath = append(byPath, app)
-	}
-	sort.SliceStable(byPath, func(i, j int) bool {
-		return !strings.HasPrefix(byPath[i].ShinyApp.Path, byPath[j].ShinyApp.Path)
-	})
-	return nil
+type AppServer struct {
+	sync.RWMutex
+	broker     *ssehandler.MessageBroker
+	config     *config.Config
+	appsByName map[string]*AppProxy
+	byPath     []*AppProxy
 }
 
-func GetSession(r *http.Request) (*Session, error) {
+// Create a new struct to hold running app proxies
+func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker, config *config.Config) (*AppServer, error) {
+	appServer := AppServer{
+		broker:     msgBroker,
+		appsByName: make(map[string]*AppProxy),
+		byPath:     []*AppProxy{},
+		config:     config,
+	}
+	apps := appModel.All()
+	for i := range apps {
+		app, err := NewAppProxy(*apps[i], msgBroker, config)
+		appServer.appsByName[apps[i].AppName] = app
+		if err != nil {
+			return nil, err
+		}
+		appServer.byPath = append(appServer.byPath, app)
+	}
+	sort.SliceStable(appServer.byPath, appServer.prefixSort)
+	return &appServer, nil
+}
+
+// Get session info for a specific request, based on request path and cookies
+func (appServer *AppServer) GetSession(r *http.Request) (*Session, error) {
+	appServer.RLock()
+	defer appServer.RUnlock()
 
 	reqURI, _ := url.Parse(r.RequestURI)
-
 	if reqURI.Path != "/" {
 		reqURI.Path = strings.TrimSuffix(reqURI.Path, "/")
 	}
-
-	for i := range byPath {
-		if byPath[i].ShinyApp.Path == reqURI.Path {
-			session, err := byPath[i].GetSession("")
+	for i := range appServer.byPath {
+		if appServer.byPath[i].ShinyApp.Path == reqURI.Path {
+			session, err := appServer.byPath[i].GetSession("")
 			if err != nil {
 				return nil, err
 			}
 			return session, nil
 		}
 	}
-
 	appCookie, err := r.Cookie("go_shiny_appid")
 	if err == nil {
-		if app, ok := appsByName[appCookie.Value]; ok {
+		if app, ok := appServer.appsByName[appCookie.Value]; ok {
 			sessCookie, _ := r.Cookie("go_shiny_session")
 			session, err := app.GetSession(sessCookie.Value)
 			if err != nil {
@@ -63,62 +71,75 @@ func GetSession(r *http.Request) (*Session, error) {
 			return session, nil
 		}
 	}
-
 	return nil, errors.New("No matching app found")
 }
 
-// Returns the status of the apps
-func GetAllStatus() map[string]interface{} {
+// Apply app settings changes
+func (s *AppServer) Update(appName string, app models.ShinyApp) error {
+	s.Lock()
+	defer s.Unlock()
 
-	status := map[string]interface{}{}
-
-	for n, app := range appsByName {
-		nb_running := 0
-		nb_rollingout := 0
-		for _, i := range app.Instances {
-			if i.Status == "RUNNING" {
-				nb_running++
-			} else if i.Status == "ROLLING_OUT" {
-				nb_rollingout++
+	appProxy, ok := s.appsByName[appName]
+	// new app
+	if !ok {
+		appProxy, err := NewAppProxy(app, s.broker, s.config)
+		s.appsByName[app.AppName] = appProxy
+		if err != nil {
+			return err
+		}
+		s.byPath = append(s.byPath, appProxy)
+		sort.SliceStable(s.byPath, s.prefixSort)
+	} else {
+		prevApp := appProxy.ShinyApp
+		appProxy.Update(app)
+		if app.AppName != prevApp.AppName {
+			delete(s.appsByName, prevApp.AppName)
+			if app.AppName != "" {
+				// case of a deleted app
+				s.appsByName[app.AppName] = appProxy
+			} else {
+				i := findAppProxy(s.byPath, appName)
+				if i < len(s.byPath) {
+					s.byPath[i] = s.byPath[len(s.byPath)-1]
+					s.byPath = s.byPath[:len(s.byPath)-1]
+				}
 			}
 		}
-		status[n] = map[string]interface{}{
-			"AppName":        app.ShinyApp.AppName,
-			"Title":          strings.Title(app.ShinyApp.AppName),
-			"Path":           app.ShinyApp.Path,
-			"Active":         app.ShinyApp.Active,
-			"RunningInst":    nb_running,
-			"RollingOutInst": nb_rollingout,
-			"ConnectedUsers": len(app.Sessions),
+		if app.Path != prevApp.Path || app.AppName == "" {
+			sort.SliceStable(s.byPath, s.prefixSort)
 		}
 	}
-	return status
+	return nil
+}
 
+// Returns the status of all apps as a map indexed with app names
+func (s *AppServer) GetAllStatus() map[string]interface{} {
+	status := map[string]interface{}{}
+	for n, app := range s.appsByName {
+		status[n] = app.GetStatus(false)
+	}
+	return status
 }
 
 // Returns the status of a given app
-func GetStatus(appName string) (map[string]interface{}, error) {
-	app, ok := appsByName[appName]
+func (s *AppServer) GetStatus(appName string) (map[string]interface{}, error) {
+	app, ok := s.appsByName[appName]
 	if !ok {
 		return nil, errors.New("App not found")
 	}
-	nbRunning := 0
-	nbRollingout := 0
-	stdErr := []string{}
-	for _, i := range app.Instances {
-		if i.Status == "RUNNING" {
-			nbRunning++
-		} else if i.Status == "ROLLING_OUT" {
-			nbRollingout++
+	return app.GetStatus(true), nil
+}
+
+func (s *AppServer) prefixSort(i, j int) bool {
+	return !strings.HasPrefix(s.byPath[i].ShinyApp.Path,
+		s.byPath[j].ShinyApp.Path)
+}
+
+func findAppProxy(p []*AppProxy, appName string) int {
+	for i, a := range p {
+		if a.ShinyApp.AppName == appName {
+			return i
 		}
-		stdErr = append(stdErr, i.StdErr)
 	}
-	return map[string]interface{}{
-		"AppName":        app.ShinyApp.AppName,
-		"Active":         app.ShinyApp.Active,
-		"RunningInst":    nbRunning,
-		"RollingOutInst": nbRollingout,
-		"ConnectedUsers": len(app.Sessions),
-		"StdErr":         stdErr,
-	}, nil
+	return len(p)
 }

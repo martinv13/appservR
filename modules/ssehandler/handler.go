@@ -10,7 +10,7 @@ import (
 
 //It keeps a list of clients those are currently attached
 //and broadcasting events to those clients.
-type Event struct {
+type MessageBroker struct {
 
 	// Events are pushed to this channel by the main events-gathering routine
 	Message chan string
@@ -29,9 +29,9 @@ type Event struct {
 }
 
 // Initialize event and Start procnteessing requests
-func NewServer() (event *Event) {
+func NewMessageBroker() *MessageBroker {
 
-	event = &Event{
+	event := &MessageBroker{
 		Message:       make(chan string),
 		NewClients:    make(chan chan string),
 		ClosedClients: make(chan chan string),
@@ -40,11 +40,11 @@ func NewServer() (event *Event) {
 
 	go event.listen()
 
-	return
+	return event
 }
 
 // Get controller
-func (stream *Event) Controller() gin.HandlerFunc {
+func (stream *MessageBroker) Controller() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 
@@ -82,7 +82,7 @@ func (stream *Event) Controller() gin.HandlerFunc {
 }
 
 //Handles addition and removal of clients and broadcast messages to clients.
-func (stream *Event) listen() {
+func (stream *MessageBroker) listen() {
 	for {
 		select {
 		// Add new available client and send last message

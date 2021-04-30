@@ -10,22 +10,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateProxy() gin.HandlerFunc {
+func (s *AppServer) CreateProxy() gin.HandlerFunc {
 
 	director := func(req *http.Request) {}
 	proxy := &httputil.ReverseProxy{Director: director}
 
 	return func(c *gin.Context) {
 
-		session, err := GetSession(c.Request)
+		session, err := s.GetSession(c.Request)
 		if err != nil {
 			c.HTML(404, "appnotfound.html", nil)
 			return
 		}
 		port := session.Instance.Port
 		origin, _ := url.Parse("http://localhost:" + port)
-		//		c.Request.Header.Add("X-Forwarded-Host", c.Request.Host)
-		//		c.Request.Header.Add("X-Origin-Host", origin.Host)
 
 		if username, ok := c.Get("username"); ok {
 			c.Request.Header.Set("go-shiny-username", username.(string))

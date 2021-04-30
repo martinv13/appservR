@@ -15,9 +15,11 @@
                     <label for="groupname">Name of the group</label>
                     <input type="text" class="form-control" id="groupname" name="groupname" value="{{.GroupName}}">
                 </div>
-                <button type="submit" class="btn btn-success">Save</button>
                 {{if .GroupName}}
+                <button type="submit" class="btn btn-success"{{if eq .GroupName "admins"}} disabled{{end}}>Save</button>
                 <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete-group-modal"{{if eq .GroupName "admins"}} disabled{{end}}>Delete group</button>
+                {{else}}
+                <button type="submit" class="btn btn-success">Save</button>
                 {{end}}
             </form>
         </div>

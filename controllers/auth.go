@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/modules/auth"
-	"gorm.io/gorm"
 )
 
 func GetLoggedName(c *gin.Context) string {
@@ -19,13 +18,23 @@ func GetLoggedName(c *gin.Context) string {
 	return name
 }
 
+type AuthController struct {
+	userModel models.UserModel
+}
+
+func NewAuthController(userModel models.UserModel) *AuthController {
+	return &AuthController{
+		userModel: userModel,
+	}
+}
+
 type loginCredentials struct {
 	Username string `form:"username"`
 	Password string `form:"password"`
 	Referer  string `form:"refurl"`
 }
 
-func DoLogin() gin.HandlerFunc {
+func (ctl *AuthController) DoLogin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var credentials loginCredentials
 		err := c.ShouldBind(&credentials)
@@ -36,10 +45,8 @@ func DoLogin() gin.HandlerFunc {
 					"Referer":      credentials.Referer,
 				})
 		}
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
 		user := models.User{Username: credentials.Username, Password: credentials.Password}
-		err = user.Login(db)
+		err = ctl.userModel.Login(&user)
 		if err == nil {
 			token := auth.GenerateToken(user)
 			cookie := http.Cookie{
@@ -60,7 +67,7 @@ func DoLogin() gin.HandlerFunc {
 	}
 }
 
-func DoLogout() gin.HandlerFunc {
+func (ctl *AuthController) DoLogout() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookie := http.Cookie{
 			Name:  "token",
@@ -79,7 +86,7 @@ type signupInfo struct {
 	Password2     string `form:"password2"`
 }
 
-func DoSignup() gin.HandlerFunc {
+func (ctl *AuthController) DoSignup() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var info signupInfo
 		err := c.ShouldBind(&info)
@@ -95,14 +102,12 @@ func DoSignup() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
 		user := models.User{
 			Username:      info.Username,
 			DisplayedName: info.DisplayedName,
 			Password:      info.Password,
 		}
-		err = user.Create(db)
+		err = ctl.userModel.Save(&user, "new")
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "signup.html",
 				gin.H{"errorMessage": "Signup failed. Username already taken."})

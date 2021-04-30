@@ -5,10 +5,19 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 
 	"github.com/martinv13/go-shiny/models"
 )
+
+type UserController struct {
+	userModel models.UserModel
+}
+
+func NewUserController(userModel models.UserModel) *UserController {
+	return &UserController{
+		userModel: userModel,
+	}
+}
 
 type userData struct {
 	Username      string
@@ -17,24 +26,21 @@ type userData struct {
 }
 
 // Get all users in a slice of struct with a boolean map to represent groups
-func GetUsersData(db *gorm.DB) ([]userData, error) {
-	var user models.User
-	users, err := user.GetAll(db)
+func (userCtl *UserController) GetUsersData() ([]userData, error) {
+	users, err := userCtl.userModel.All()
 	if err != nil {
 		return nil, err
 	}
 	usersData := make([]userData, len(users), len(users))
 	for i, u := range users {
-		usersData[i] = userData{Username: u.Username, DisplayedName: u.DisplayedName, Groups: u.GroupsMap(db)}
+		usersData[i] = userData{Username: u.Username, DisplayedName: u.DisplayedName, Groups: userCtl.userModel.GroupsMap(&u)}
 	}
 	return usersData, nil
 }
 
-func GetUsers() gin.HandlerFunc {
+func (userCtl *UserController) GetUsers() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
-		usersData, err := GetUsersData(db)
+		usersData, err := userCtl.GetUsersData()
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "users.html",
 				gin.H{"loggedUserName": GetLoggedName(c), "selTab": "users", "errorMessage": "Unable to retrieve users."})
@@ -49,13 +55,9 @@ func GetUsers() gin.HandlerFunc {
 	}
 }
 
-func GetUser() gin.HandlerFunc {
+func (userCtl *UserController) GetUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
 		username := c.Param("username")
-
-		user := models.User{Username: username}
 
 		if username == "new" {
 			c.HTML(http.StatusOK, "user.html", gin.H{
@@ -65,7 +67,7 @@ func GetUser() gin.HandlerFunc {
 			return
 		}
 
-		err := user.Get(db)
+		user, err := userCtl.userModel.FindByUsername(username)
 
 		if err != nil {
 			c.HTML(http.StatusBadRequest, "user.html", gin.H{
@@ -77,12 +79,13 @@ func GetUser() gin.HandlerFunc {
 			return
 		}
 
+		allowedGroups := userCtl.userModel.GroupsMap(user)
 		c.HTML(http.StatusOK, "user.html", gin.H{
 			"selTab":         "users",
 			"loggedUserName": GetLoggedName(c),
 			"username":       user.Username,
 			"displayedName":  user.DisplayedName,
-			"groups":         user.GroupsMap(db),
+			"groups":         allowedGroups,
 		})
 	}
 }
@@ -94,10 +97,8 @@ type userInfo struct {
 	Password      string   `form:"password"`
 }
 
-func AdminUpdateUser() gin.HandlerFunc {
+func (userCtl *UserController) AdminUpdateUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
 		username := c.Param("username")
 		var info userInfo
 		err := c.ShouldBind(&info)
@@ -120,7 +121,7 @@ func AdminUpdateUser() gin.HandlerFunc {
 			Groups:        groups,
 			Password:      info.Password,
 		}
-		err = user.AdminUpdate(db, username)
+		err = userCtl.userModel.AdminSave(&user, username)
 		if err != nil {
 			c.HTML(http.StatusBadRequest, "user.html", gin.H{
 				"selTab":         "users",
@@ -130,32 +131,30 @@ func AdminUpdateUser() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		allowedGroups := userCtl.userModel.GroupsMap(&user)
 		c.HTML(http.StatusOK, "user.html", gin.H{
 			"selTab":         "users",
 			"loggedUserName": GetLoggedName(c),
 			"successMessage": "User has been updated",
 			"username":       user.Username,
 			"displayedName":  user.DisplayedName,
-			"groups":         user.GroupsMap(db),
+			"groups":         allowedGroups,
 		})
 	}
 }
 
-func DeleteUser() gin.HandlerFunc {
+func (userCtl *UserController) DeleteUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
 		username := c.Param("username")
-		user := models.User{Username: username}
 		resData := gin.H{"loggedUserName": GetLoggedName(c), "selTab": "users"}
-		err := user.Delete(db)
+		err := userCtl.userModel.DeleteByUsername(username)
 		if err != nil {
 			resData["errorMessage"] = fmt.Sprintf("Could note delete user '%s'.", username)
 			c.HTML(http.StatusBadRequest, "user.html", resData)
 			c.Abort()
 			return
 		}
-		usersData, err := GetUsersData(db)
+		usersData, err := userCtl.GetUsersData()
 		resData["successMessage"] = "User has been deleted"
 		if err != nil {
 			resData["errorMessage"] = "Unable to retrieve users"

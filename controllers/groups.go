@@ -6,15 +6,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/models"
-	"gorm.io/gorm"
 )
 
-func GetGroups() gin.HandlerFunc {
+type GroupController struct {
+	groupModel models.GroupModel
+}
+
+func NewGroupController(groupModel models.GroupModel) *GroupController {
+	return &GroupController{
+		groupModel: groupModel,
+	}
+}
+
+func (ctl *GroupController) GetGroups() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
-		group := models.Group{}
-		groups, _ := group.GetAll(db)
+		groups, _ := ctl.groupModel.All()
 		c.HTML(http.StatusOK, "groups.html", gin.H{
 			"loggedUserName": GetLoggedName(c),
 			"selTab":         "groups",
@@ -23,10 +29,8 @@ func GetGroups() gin.HandlerFunc {
 	}
 }
 
-func GetGroup() gin.HandlerFunc {
+func (ctl *GroupController) GetGroup() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
 		groupName := c.Param("groupname")
 
 		if groupName == "new" {
@@ -37,8 +41,8 @@ func GetGroup() gin.HandlerFunc {
 			return
 		}
 
-		group := models.Group{Name: groupName}
-		err := group.Get(db)
+		group, err := ctl.groupModel.FindByName(groupName)
+
 		if err != nil {
 			c.HTML(http.StatusNotFound, "group.html", gin.H{
 				"selTab":         "groups",
@@ -60,10 +64,8 @@ type GroupPayload struct {
 	GroupName string `form:"groupname" binding:"required"`
 }
 
-func UpdateGroup() gin.HandlerFunc {
+func (ctl *GroupController) UpdateGroup() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
 
 		resMap := gin.H{
 			"selTab":         "groups",
@@ -81,7 +83,7 @@ func UpdateGroup() gin.HandlerFunc {
 		}
 
 		group := models.Group{Name: groupInfo.GroupName}
-		err = group.Update(db, oldGroupName)
+		err = ctl.groupModel.Save(&group, oldGroupName)
 
 		if err != nil {
 			resMap["errorMessage"] = "Update failed. Please check provided information."
@@ -100,31 +102,23 @@ func UpdateGroup() gin.HandlerFunc {
 	}
 }
 
-func AddGroupMember() gin.HandlerFunc {
+func (ctl *GroupController) AddGroupMember() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
-		group := models.Group{Name: c.Param("groupname")}
-		group.AddMember(db, c.Param("username"))
+		ctl.groupModel.AddMember(c.Param("groupname"), c.Param("username"))
 	}
 }
 
-func RemoveGroupMember() gin.HandlerFunc {
+func (ctl *GroupController) RemoveGroupMember() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
-		group := models.Group{Name: c.Param("groupname")}
-		group.RemoveMember(db, c.Param("username"))
+		ctl.groupModel.RemoveMember(c.Param("groupname"), c.Param("username"))
 	}
 }
 
-func DeleteGroup() gin.HandlerFunc {
+func (ctl *GroupController) DeleteGroup() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		dbi, _ := c.Get("DB")
-		db := dbi.(*gorm.DB)
 		group := models.Group{Name: c.Param("groupname")}
 		resData := gin.H{"loggedUserName": GetLoggedName(c), "selTab": "groups"}
-		err := group.Delete(db)
+		err := ctl.groupModel.Delete(&group)
 		if err != nil {
 			resData["errorMessage"] = fmt.Sprintf("Could not delete group '%s'", group.Name)
 			c.HTML(http.StatusBadRequest, "group.html", resData)
@@ -132,8 +126,7 @@ func DeleteGroup() gin.HandlerFunc {
 			return
 		}
 		resData["successMessage"] = fmt.Sprintf("Group '%s' has been deleted.", group.Name)
-		group = models.Group{}
-		groups, err := group.GetAll(db)
+		groups, err := ctl.groupModel.All()
 		if err != nil {
 			resData["errorMessage"] = "Could not retrieve groups."
 			c.HTML(http.StatusBadRequest, "groups.html", resData)

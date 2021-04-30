@@ -1,21 +1,34 @@
 package models
 
 import (
+	"errors"
+
 	"github.com/martinv13/go-shiny/modules/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func InitDB() *gorm.DB {
+func NewDB(conf *config.Config) (*gorm.DB, error) {
 
-	db, err := gorm.Open(sqlite.Open(config.ExecutableFolder+"/data.db"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
+	dbType := conf.GetString("database.type")
+
+	var db *gorm.DB
+	var err error
+
+	if dbType == "sqlite" {
+		dbPath := conf.GetString("database.path")
+		if dbPath == "memory" {
+			dbPath = "file::memory:?cache=shared"
+		}
+		db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+		if err != nil {
+			return nil, errors.New("failed to connect to the database")
+		}
 	}
 
 	db.AutoMigrate(&User{})
-
+	db.AutoMigrate(&Group{})
 	db.AutoMigrate(&ShinyApp{})
 
-	return db
+	return db, nil
 }

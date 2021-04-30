@@ -2,22 +2,24 @@ package appproxy
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/martinv13/go-shiny/models"
+	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/martinv13/go-shiny/modules/portspool"
-	"github.com/spf13/viper"
 )
 
 type appInstance struct {
-	App    *models.ShinyApp
+	App    models.ShinyApp
 	Status string
 	Port   string
 	StdErr string
 	Cmd    *exec.Cmd
+	config *config.Config
 }
 
 // Start an instance of the app and relaunch when it fails
@@ -27,8 +29,14 @@ func (inst *appInstance) Start() error {
 		return err
 	}
 	inst.Port = port
+	_, err = os.Stat(inst.App.AppDir)
+	if err != nil {
+		inst.Status = "ERROR"
+		inst.StdErr = "App source directory does not exist"
+		return errors.New("App source directory does not exist")
+	}
 	inst.Status = "STARTING"
-	cmd := exec.Command(viper.GetString("Rscript"), "-e", "shiny::runApp('.', port="+inst.Port+")")
+	cmd := exec.Command(inst.config.GetString("Rscript"), "-e", "shiny::runApp('.', port="+inst.Port+")")
 	cmd.Dir = inst.App.AppDir
 	cmd.Env = os.Environ()
 
@@ -75,9 +83,11 @@ func (inst *appInstance) PhaseOut() {
 
 // Stop an app instance
 func (inst *appInstance) Stop() error {
-	err := inst.Cmd.Process.Kill()
-	if err != nil {
-		return err
+	if inst.Cmd != nil && inst.Cmd.Process != nil {
+		err := inst.Cmd.Process.Kill()
+		if err != nil {
+			return err
+		}
 	}
 	inst.Status = "STOPPED"
 	portspool.Release(inst.Port)

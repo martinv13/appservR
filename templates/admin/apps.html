@@ -1,6 +1,12 @@
 {{template "adminheader" .}}
 
 <div class="tab-pane active" id="apps">
+  {{if .successMessage}}
+  <div class="alert alert-success" role="alert">{{.successMessage}}</div>
+  {{end}}
+  {{if .errorMessage}}
+  <div class="alert alert-danger" role="alert">{{.errorMessage}}</div>
+  {{end}}
   <div class="row">
     <div class="col-1"></div>
     <div class="col-10">
@@ -37,20 +43,20 @@
     {{range .apps}}
     <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
         <div class="card w-100 mb-4" id="card-{{.AppName}}">
-          {{if .RunningInst}}
+          {{if .Status.RunningInst}}
           <div style="position: absolute; top: 1px; right: 30px; z-index:10">
             <a href="{{.Path}}" target="_blank" class="text-decoration-none"><svg width="12" height="12">
               <use href="#bi-box-arrow-up-right">
             </svg></a>
           </div>
           {{end}}
-            <div style="background-color:{{if .RunningInst}}#32ae27{{else}}#d92a2a{{end}}; position: absolute; top: 10px; right: 10px; border-radius: 6px; width: 12px; height: 12px;"></div>
+            <div style="background-color:{{if .Status.RunningInst}}#32ae27{{else}}#d92a2a{{end}}; position: absolute; top: 10px; right: 10px; border-radius: 6px; width: 12px; height: 12px;"></div>
             <div class="card-body">
                 <a href="/admin/apps/{{.AppName}}" class="card-title searchable stretched-link h5">{{.Title}}</a>
                 <p class="card-text">
-                  {{if .RunningInst}}{{.RunningInst}} running instances{{else}}no running instances{{end}}
+                  {{if .Status.RunningInst}}{{.Status.RunningInst}} running instances{{else}}no running instances{{end}}
                 </p>
-                <p class="card-text connected-users">{{if .ConnectedUsers}}{{.ConnectedUsers}} users connected{{else}}no user connected{{end}}</p>
+                <p class="card-text connected-users">{{if .Status.ConnectedUsers}}{{.Status.ConnectedUsers}} connected users{{else}}no user connected{{end}}</p>
             </div>
         </div>
     </div>
