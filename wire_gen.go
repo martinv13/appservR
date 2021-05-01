@@ -8,7 +8,7 @@ package main
 import (
 	"github.com/martinv13/go-shiny/controllers"
 	"github.com/martinv13/go-shiny/models"
-	"github.com/martinv13/go-shiny/modules/appproxy"
+	"github.com/martinv13/go-shiny/modules/appserver"
 	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/martinv13/go-shiny/modules/ssehandler"
 	"github.com/martinv13/go-shiny/modules/vfsdata"
@@ -28,12 +28,12 @@ func InitializeServer() (*server.AppRouter, error) {
 		return nil, err
 	}
 	groupModelDB := models.NewGroupModelDB(db)
-	appModelDB, err := models.NewAppModelDB(db, configConfig, groupModelDB)
+	appModelDB, err := models.NewAppModelDB(db, groupModelDB)
 	if err != nil {
 		return nil, err
 	}
 	messageBroker := ssehandler.NewMessageBroker()
-	appServer, err := appproxy.NewAppServer(appModelDB, messageBroker, configConfig)
+	appServer, err := appserver.NewAppServer(appModelDB, messageBroker, configConfig)
 	if err != nil {
 		return nil, err
 	}

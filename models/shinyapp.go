@@ -3,10 +3,8 @@ package models
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 
-	"github.com/martinv13/go-shiny/modules/config"
 	"gorm.io/gorm"
 )
 
@@ -14,6 +12,7 @@ type ShinyApp struct {
 	gorm.Model
 	AppName        string `gorm:"unique"`
 	Path           string
+	AppSource      string
 	AppDir         string
 	Workers        int
 	Active         bool
@@ -36,7 +35,7 @@ type AppModelDB struct {
 	apps       map[string]*ShinyApp
 }
 
-func NewAppModelDB(db *gorm.DB, conf *config.Config, groupModel *GroupModelDB) (*AppModelDB, error) {
+func NewAppModelDB(db *gorm.DB, groupModel *GroupModelDB) (*AppModelDB, error) {
 
 	appModel := AppModelDB{
 		DB:         db,
@@ -52,22 +51,10 @@ func NewAppModelDB(db *gorm.DB, conf *config.Config, groupModel *GroupModelDB) (
 	}
 
 	if len(apps) == 0 {
-		_ = os.Mkdir(conf.ExecutableFolder+"/shinyapps", os.ModeDir)
-		_ = os.Mkdir(conf.ExecutableFolder+"/shinyapps/sample-app", os.ModeDir)
-		f, err := os.Create(conf.ExecutableFolder + "/shinyapps/sample-app/app.R")
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		_, err = f.WriteString(sampleApp)
-		if err != nil {
-			return nil, err
-		}
-
 		defaultApp := ShinyApp{
 			AppName:        "sample-app",
 			Path:           "/",
-			AppDir:         conf.ExecutableFolder + "/shinyapps/sample-app/",
+			AppSource:      "sample-app",
 			Workers:        2,
 			Active:         true,
 			RestrictAccess: false,

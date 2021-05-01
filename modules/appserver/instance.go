@@ -1,4 +1,4 @@
-package appproxy
+package appserver
 
 import (
 	"bufio"
@@ -8,18 +8,18 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/martinv13/go-shiny/modules/portspool"
 )
 
 type appInstance struct {
-	App    models.ShinyApp
-	Status string
-	Port   string
-	StdErr string
-	Cmd    *exec.Cmd
-	config *config.Config
+	AppName string
+	AppDir  string
+	Status  string
+	Port    string
+	StdErr  string
+	Cmd     *exec.Cmd
+	config  *config.Config
 }
 
 // Start an instance of the app and relaunch when it fails
@@ -29,7 +29,7 @@ func (inst *appInstance) Start() error {
 		return err
 	}
 	inst.Port = port
-	_, err = os.Stat(inst.App.AppDir)
+	_, err = os.Stat(inst.AppDir)
 	if err != nil {
 		inst.Status = "ERROR"
 		inst.StdErr = "App source directory does not exist"
@@ -37,7 +37,7 @@ func (inst *appInstance) Start() error {
 	}
 	inst.Status = "STARTING"
 	cmd := exec.Command(inst.config.GetString("Rscript"), "-e", "shiny::runApp('.', port="+inst.Port+")")
-	cmd.Dir = inst.App.AppDir
+	cmd.Dir = inst.AppDir
 	cmd.Env = os.Environ()
 
 	inst.Cmd = cmd
@@ -53,7 +53,7 @@ func (inst *appInstance) Start() error {
 			inst.StdErr += line + "\n"
 			if strings.HasPrefix(line, "Listening on") {
 				inst.Status = "RUNNING"
-				fmt.Println("app " + inst.App.AppName + " at " + inst.Port + " is running")
+				fmt.Println("app " + inst.AppName + " at " + inst.Port + " is running")
 				return
 			}
 		}

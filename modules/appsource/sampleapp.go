@@ -1,4 +1,4 @@
-package models
+package appsource
 
 // A sample Shiny app
 var sampleApp = `#

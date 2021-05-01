@@ -8,11 +8,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func setUp() (*gorm.DB, *config.Config, error) {
+func setUp() (*gorm.DB, error) {
 
 	conf, err := config.NewConfig()
 	if err != nil {
-		return nil, nil, errors.New("unable to initialize config")
+		return nil, errors.New("unable to initialize config")
 	}
 
 	conf.Set("database.type", "sqlite")
@@ -21,27 +21,27 @@ func setUp() (*gorm.DB, *config.Config, error) {
 	db, err := NewDB(conf)
 
 	if err != nil {
-		return nil, nil, errors.New("unable to initialize in memory database")
+		return nil, errors.New("unable to initialize in memory database")
 	}
 
-	return db, conf, nil
+	return db, nil
 }
 
 func TestDataModelDB(t *testing.T) {
 
-	db, conf, err := setUp()
+	db, err := setUp()
 	if err != nil {
 		t.Error("unable to initialize database")
-	}
-
-	appModel, err := NewAppModelDB(db, conf)
-	if err != nil {
-		t.Error("unable to initialize app model")
 	}
 
 	groupModel := NewGroupModelDB(db)
 	if err != nil {
 		t.Error("unable to initialize group model")
+	}
+
+	appModel, err := NewAppModelDB(db, groupModel)
+	if err != nil {
+		t.Error("unable to initialize app model")
 	}
 
 	userModel := NewUserModelDB(db, groupModel)
@@ -95,7 +95,7 @@ func TestDataModelDB(t *testing.T) {
 		}
 	})
 	t.Run("app=create", func(t *testing.T) {
-		app := &ShinyApp{
+		app := ShinyApp{
 			AppName: "test-app",
 			Path:    "/test-app",
 			AppDir:  "shinyapps/sample-app/",

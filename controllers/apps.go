@@ -8,15 +8,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/models"
-	"github.com/martinv13/go-shiny/modules/appproxy"
+	"github.com/martinv13/go-shiny/modules/appserver"
 )
 
 type AppController struct {
 	appModel  models.AppModel
-	appServer *appproxy.AppServer
+	appServer *appserver.AppServer
 }
 
-func NewAppController(appModel models.AppModel, appServer *appproxy.AppServer) *AppController {
+func NewAppController(appModel models.AppModel, appServer *appserver.AppServer) *AppController {
 	return &AppController{
 		appModel:  appModel,
 		appServer: appServer,

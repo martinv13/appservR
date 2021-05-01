@@ -1,4 +1,4 @@
-package appproxy
+package appserver
 
 import (
 	"errors"

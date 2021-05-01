@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/controllers"
 	"github.com/martinv13/go-shiny/middlewares"
-	"github.com/martinv13/go-shiny/modules/appproxy"
+	"github.com/martinv13/go-shiny/modules/appserver"
 	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/martinv13/go-shiny/modules/ssehandler"
 	"github.com/martinv13/go-shiny/modules/vfsdata"
@@ -22,7 +22,7 @@ type AppRouter struct {
 
 // Create the router instance
 func NewAppRouter(config *config.Config, staticPaths *vfsdata.StaticPaths,
-	appServer *appproxy.AppServer, msgBroker *ssehandler.MessageBroker,
+	appServer *appserver.AppServer, msgBroker *ssehandler.MessageBroker,
 	appsCtl *controllers.AppController, usersCtl *controllers.UserController,
 	groupsCtl *controllers.GroupController, authCtl *controllers.AuthController) (*AppRouter, error) {
 

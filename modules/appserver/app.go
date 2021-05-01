@@ -1,4 +1,4 @@
-package appproxy
+package appserver
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/martinv13/go-shiny/models"
+	"github.com/martinv13/go-shiny/modules/appsource"
 	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/martinv13/go-shiny/modules/ssehandler"
 	uuid "github.com/satori/go.uuid"
@@ -33,6 +34,7 @@ func (sess *Session) Close() {
 type AppProxy struct {
 	sync.RWMutex
 	ShinyApp     models.ShinyApp
+	AppSource    appsource.AppSource
 	StatusStream *ssehandler.MessageBroker
 	Instances    map[int]*appInstance
 	nextID       int
@@ -45,6 +47,7 @@ func NewAppProxy(app models.ShinyApp, msgBroker *ssehandler.MessageBroker, confi
 
 	appProxy := &AppProxy{
 		ShinyApp:     app,
+		AppSource:    appsource.NewAppSource(app, config),
 		StatusStream: msgBroker,
 		nextID:       0,
 		Sessions:     map[string]*Session{},
@@ -56,7 +59,11 @@ func NewAppProxy(app models.ShinyApp, msgBroker *ssehandler.MessageBroker, confi
 	defer appProxy.Unlock()
 
 	for w := 0; w < app.Workers; w++ {
-		inst := &appInstance{App: app, config: config}
+		inst := &appInstance{
+			AppName: app.AppName,
+			AppDir:  appProxy.AppSource.Path(),
+			config:  config,
+		}
 		inst.Start()
 		appProxy.Instances[appProxy.nextID] = inst
 		appProxy.nextID++
@@ -71,7 +78,11 @@ func (p *AppProxy) phaseOut(restart bool) {
 	}
 	if restart {
 		for w := 0; w < p.ShinyApp.Workers; w++ {
-			inst := &appInstance{App: p.ShinyApp, config: p.config}
+			inst := &appInstance{
+				AppName: p.ShinyApp.AppName,
+				AppDir:  p.AppSource.Path(),
+				config:  p.config,
+			}
 			inst.Start()
 			p.Instances[p.nextID] = inst
 			p.nextID++
