@@ -47,11 +47,9 @@ func (ctl *AppController) GetShinyApp() gin.HandlerFunc {
 		}
 
 		if appName == "new" || err != nil {
-			c.HTML(http.StatusOK, "app.html", gin.H{
-				"selTab":         "apps",
-				"loggedUserName": GetLoggedName(c),
-				"Title":          "New App",
-			})
+			data, err = ctl.buildAppTemplateData(models.ShinyApp{}, c)
+			data["Title"] = "New App"
+			c.HTML(http.StatusOK, "app.html", data)
 			return
 		}
 		c.HTML(http.StatusOK, "app.html", data)
@@ -149,11 +147,13 @@ func (ctl *AppController) buildAppTemplateData(app models.ShinyApp, c *gin.Conte
 		"Title":          strings.Title(app.AppName),
 		"AppSettings":    appMap,
 	}
-	status, err := ctl.appServer.GetStatus(app.AppName)
-	if err != nil {
-		return nil, err
+	if app.AppName != "" {
+		status, err := ctl.appServer.GetStatus(app.AppName)
+		if err != nil {
+			return nil, err
+		}
+		data["Status"] = status
 	}
-	data["Status"] = status
 	return data, nil
 }
 

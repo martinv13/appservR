@@ -17,7 +17,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 
-		session, err := s.GetSession(c.Request)
+		session, err := s.GetSession(c)
 		if err != nil {
 			c.HTML(404, "appnotfound.html", nil)
 			return
@@ -31,6 +31,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		if displayedname, ok := c.Get("displayedname"); ok {
 			c.Request.Header.Set("go-shiny-displayedname", displayedname.(string))
 		}
+		c.Request.Header.Set("go-shiny-appname", session.Instance.AppName)
 
 		c.Request.URL.Scheme = "http"
 		c.Request.URL.Host = origin.Host

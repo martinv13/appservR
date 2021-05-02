@@ -50,11 +50,11 @@ func TestDataModelDB(t *testing.T) {
 	}
 
 	t.Run("user=lifecycle", func(t *testing.T) {
-		err := userModel.Save(&User{Username: "admin", DisplayedName: "John", Password: "test"}, "new")
+		err := userModel.Save(User{Username: "admin", DisplayedName: "John", Password: "test"}, "new")
 		if err != nil {
 			t.Error("failed to create admin user")
 		}
-		err = userModel.Save(&User{Username: "user1", DisplayedName: "James", Password: "test"}, "new")
+		err = userModel.Save(User{Username: "user1", DisplayedName: "James", Password: "test"}, "new")
 		if err != nil {
 			t.Error("failed to create non-admin user")
 		}
@@ -62,21 +62,23 @@ func TestDataModelDB(t *testing.T) {
 		if err != nil {
 			t.Error("failed to find admin user")
 		}
-		groups := userModel.GroupsMap(user)
+		userData := userModel.AsMap(user)
+		groups := userData["Groups"].(map[string]bool)
 		if gr, ok := groups["admins"]; len(groups) != 1 || !ok || !gr || len(user.Groups) != 1 || user.Groups[0].Name != "admins" {
 			t.Error("user not registered as admin")
 		}
 		user1 := User{Username: "user1", Password: "test"}
-		err = userModel.Login(&user1)
+		user1, err = userModel.Login(user1)
 		if err != nil {
 			t.Error("failed to login")
 		}
 		user2 := User{Username: "user1", Password: "test2"}
-		err = userModel.Login(&user2)
+		user2, err = userModel.Login(user2)
 		if err == nil {
 			t.Error("login should fail")
 		}
-		groups = userModel.GroupsMap(&user1)
+		userData = userModel.AsMap(user1)
+		groups = userData["Groups"].(map[string]bool)
 		if gr, ok := groups["admins"]; len(groups) != 1 || !ok || gr || len(user1.Groups) != 0 {
 			t.Error("user should not be admin")
 		}

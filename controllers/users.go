@@ -25,33 +25,17 @@ type userData struct {
 	Groups        map[string]bool
 }
 
-// Get all users in a slice of struct with a boolean map to represent groups
-func (userCtl *UserController) GetUsersData() ([]userData, error) {
-	users, err := userCtl.userModel.All()
-	if err != nil {
-		return nil, err
-	}
-	usersData := make([]userData, len(users), len(users))
-	for i, u := range users {
-		usersData[i] = userData{Username: u.Username, DisplayedName: u.DisplayedName, Groups: userCtl.userModel.GroupsMap(&u)}
-	}
-	return usersData, nil
-}
-
+// Get all users
 func (userCtl *UserController) GetUsers() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		usersData, err := userCtl.GetUsersData()
+		users, err := userCtl.userModel.All()
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "users.html",
 				gin.H{"loggedUserName": GetLoggedName(c), "selTab": "users", "errorMessage": "Unable to retrieve users."})
 			c.Abort()
 			return
 		}
-		c.HTML(http.StatusOK, "users.html", gin.H{
-			"loggedUserName": GetLoggedName(c),
-			"selTab":         "users",
-			"users":          usersData,
-		})
+		c.HTML(http.StatusOK, "users.html", userCtl.buildUsersTemplateData(users, c))
 	}
 }
 
@@ -60,10 +44,7 @@ func (userCtl *UserController) GetUser() gin.HandlerFunc {
 		username := c.Param("username")
 
 		if username == "new" {
-			c.HTML(http.StatusOK, "user.html", gin.H{
-				"selTab":         "users",
-				"loggedUserName": GetLoggedName(c),
-			})
+			c.HTML(http.StatusOK, "user.html", userCtl.buildUserTemplateData(models.User{}, c))
 			return
 		}
 
@@ -78,15 +59,7 @@ func (userCtl *UserController) GetUser() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
-		allowedGroups := userCtl.userModel.GroupsMap(user)
-		c.HTML(http.StatusOK, "user.html", gin.H{
-			"selTab":         "users",
-			"loggedUserName": GetLoggedName(c),
-			"username":       user.Username,
-			"displayedName":  user.DisplayedName,
-			"groups":         allowedGroups,
-		})
+		c.HTML(http.StatusOK, "user.html", userCtl.buildUserTemplateData(user, c))
 	}
 }
 
@@ -112,8 +85,16 @@ func (userCtl *UserController) AdminUpdateUser() gin.HandlerFunc {
 			return
 		}
 		groups := make([]*models.Group, len(info.Groups), len(info.Groups))
+		isAdmin := false
 		for i := range info.Groups {
 			groups[i] = &models.Group{Name: info.Groups[i]}
+			isAdmin = isAdmin || groups[i].Name == "admins"
+		}
+		loggedUser, ok := c.Get("username")
+		if ok {
+			if username == loggedUser && !isAdmin {
+				groups = append(groups, &models.Group{Name: "admins"})
+			}
 		}
 		user := models.User{
 			Username:      info.Username,
@@ -121,7 +102,7 @@ func (userCtl *UserController) AdminUpdateUser() gin.HandlerFunc {
 			Groups:        groups,
 			Password:      info.Password,
 		}
-		err = userCtl.userModel.AdminSave(&user, username)
+		err = userCtl.userModel.AdminSave(user, username)
 		if err != nil {
 			c.HTML(http.StatusBadRequest, "user.html", gin.H{
 				"selTab":         "users",
@@ -131,15 +112,9 @@ func (userCtl *UserController) AdminUpdateUser() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		allowedGroups := userCtl.userModel.GroupsMap(&user)
-		c.HTML(http.StatusOK, "user.html", gin.H{
-			"selTab":         "users",
-			"loggedUserName": GetLoggedName(c),
-			"successMessage": "User has been updated",
-			"username":       user.Username,
-			"displayedName":  user.DisplayedName,
-			"groups":         allowedGroups,
-		})
+		res := userCtl.buildUserTemplateData(user, c)
+		res["successMessage"] = "User has been updated"
+		c.HTML(http.StatusOK, "user.html", res)
 	}
 }
 
@@ -154,15 +129,36 @@ func (userCtl *UserController) DeleteUser() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		usersData, err := userCtl.GetUsersData()
-		resData["successMessage"] = "User has been deleted"
+		users, err := userCtl.userModel.All()
 		if err != nil {
 			resData["errorMessage"] = "Unable to retrieve users"
 			c.HTML(http.StatusInternalServerError, "users.html", resData)
 			c.Abort()
 			return
 		}
-		resData["users"] = usersData
+		resData = userCtl.buildUsersTemplateData(users, c)
+		resData["successMessage"] = "User has been deleted"
 		c.HTML(http.StatusOK, "users.html", resData)
+	}
+}
+
+// Get user data
+func (ctl *UserController) buildUserTemplateData(user models.User, c *gin.Context) map[string]interface{} {
+	res := ctl.userModel.AsMap(user)
+	res["selTab"] = "users"
+	res["loggedUserName"] = GetLoggedName(c)
+	return res
+}
+
+// Get all users data
+func (ctl *UserController) buildUsersTemplateData(users []models.User, c *gin.Context) map[string]interface{} {
+	usersData := make([]map[string]interface{}, len(users), len(users))
+	for i, user := range users {
+		usersData[i] = ctl.userModel.AsMap(user)
+	}
+	return map[string]interface{}{
+		"selTab":         "users",
+		"loggedUserName": GetLoggedName(c),
+		"users":          usersData,
 	}
 }

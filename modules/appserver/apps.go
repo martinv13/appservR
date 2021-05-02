@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/models"
 	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/martinv13/go-shiny/modules/ssehandler"
@@ -43,16 +44,22 @@ func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker,
 }
 
 // Get session info for a specific request, based on request path and cookies
-func (appServer *AppServer) GetSession(r *http.Request) (*Session, error) {
+func (appServer *AppServer) GetSession(c *gin.Context) (*Session, error) {
 	appServer.RLock()
 	defer appServer.RUnlock()
 
+	r := c.Request
+
 	reqURI, _ := url.Parse(r.RequestURI)
-	if reqURI.Path != "/" {
-		reqURI.Path = strings.TrimSuffix(reqURI.Path, "/")
-	}
+	reqPath := strings.TrimSuffix(reqURI.Path, "/")
 	for i := range appServer.byPath {
-		if appServer.byPath[i].ShinyApp.Path == reqURI.Path {
+		appPath := strings.TrimSuffix(appServer.byPath[i].ShinyApp.Path, "/")
+		if appPath == reqPath {
+			if reqURI.Path != reqPath+"/" {
+				c.Redirect(http.StatusMovedPermanently, reqPath+"/")
+				c.Abort()
+				return nil, nil
+			}
 			session, err := appServer.byPath[i].GetSession("")
 			if err != nil {
 				return nil, err

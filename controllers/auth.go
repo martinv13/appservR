@@ -46,7 +46,7 @@ func (ctl *AuthController) DoLogin() gin.HandlerFunc {
 				})
 		}
 		user := models.User{Username: credentials.Username, Password: credentials.Password}
-		err = ctl.userModel.Login(&user)
+		user, err = ctl.userModel.Login(user)
 		if err == nil {
 			token := auth.GenerateToken(user)
 			cookie := http.Cookie{
@@ -107,7 +107,7 @@ func (ctl *AuthController) DoSignup() gin.HandlerFunc {
 			DisplayedName: info.DisplayedName,
 			Password:      info.Password,
 		}
-		err = ctl.userModel.Save(&user, "new")
+		err = ctl.userModel.Save(user, "new")
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "signup.html",
 				gin.H{"errorMessage": "Signup failed. Username already taken."})

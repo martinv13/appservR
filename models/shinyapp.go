@@ -199,10 +199,14 @@ func (m *AppModelDB) AsMap(app ShinyApp) (map[string]interface{}, error) {
 	for _, g := range allGroups {
 		groups[g] = false
 	}
-	for _, g := range app.AllowedGroups {
+	allowedGroups := app.AllowedGroups
+	if allowedGroups == nil {
+		allowedGroups = make([]*Group, 0)
+	}
+	for _, g := range allowedGroups {
 		groups[g.Name] = true
 	}
-	return map[string]interface{}{
+	res := map[string]interface{}{
 		"AppName":        app.AppName,
 		"Path":           app.Path,
 		"AppDir":         app.AppDir,
@@ -210,5 +214,6 @@ func (m *AppModelDB) AsMap(app ShinyApp) (map[string]interface{}, error) {
 		"Active":         app.Active,
 		"RestrictAccess": app.RestrictAccess,
 		"AllowedGroups":  groups,
-	}, nil
+	}
+	return res, nil
 }

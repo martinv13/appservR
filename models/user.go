@@ -20,12 +20,12 @@ type User struct {
 
 type UserModel interface {
 	All() ([]User, error)
-	FindByUsername(username string) (*User, error)
-	Save(user *User, oldUsername string) error
-	AdminSave(user *User, oldUsername string) error
+	FindByUsername(username string) (User, error)
+	Save(user User, oldUsername string) error
+	AdminSave(user User, oldUsername string) error
 	DeleteByUsername(username string) error
-	GroupsMap(user *User) map[string]bool
-	Login(user *User) error
+	AsMap(user User) map[string]interface{}
+	Login(user User) (User, error)
 }
 
 type UserModelDB struct {
@@ -52,17 +52,17 @@ func (m *UserModelDB) All() ([]User, error) {
 }
 
 // Find a user by its username
-func (m *UserModelDB) FindByUsername(username string) (*User, error) {
+func (m *UserModelDB) FindByUsername(username string) (User, error) {
 	var user User
 	err := m.DB.Preload(clause.Associations).First(&user, "username=?", username).Error
 	if err != nil {
-		return nil, err
+		return User{}, err
 	}
-	return &user, nil
+	return user, nil
 }
 
 // Create or update a user and add to admin group if it is the first user
-func (m *UserModelDB) Save(user *User, oldUsername string) error {
+func (m *UserModelDB) Save(user User, oldUsername string) error {
 
 	if user.Username == "new" {
 		return errors.New("User name cannot be 'new'")
@@ -109,7 +109,7 @@ func (m *UserModelDB) Save(user *User, oldUsername string) error {
 }
 
 // Create or update a user as admin
-func (m *UserModelDB) AdminSave(user *User, oldUsername string) error {
+func (m *UserModelDB) AdminSave(user User, oldUsername string) error {
 
 	groupNames := make([]string, len(user.Groups), len(user.Groups))
 	for i, g := range user.Groups {
@@ -188,8 +188,8 @@ func (m *UserModelDB) Update(user User, oldUsername string) error {
 	return nil
 }
 
-// Function to retrieve groups as a map of boolean for the current user
-func (m *UserModelDB) GroupsMap(user *User) map[string]bool {
+// Function to retrieve user as a map
+func (m *UserModelDB) AsMap(user User) map[string]interface{} {
 	groupsMap := map[string]bool{}
 	groups, err := m.groupModel.AllNames()
 	if err != nil {
@@ -201,21 +201,24 @@ func (m *UserModelDB) GroupsMap(user *User) map[string]bool {
 	for i := range user.Groups {
 		groupsMap[user.Groups[i].Name] = true
 	}
-	return groupsMap
+	return map[string]interface{}{
+		"Username":      user.Username,
+		"DisplayedName": user.DisplayedName,
+		"Groups":        groupsMap,
+	}
 }
 
 // Get an user and verify password
-func (m *UserModelDB) Login(user *User) error {
+func (m *UserModelDB) Login(user User) (User, error) {
 	var loginUser User
 	err := m.DB.Preload(clause.Associations).First(&loginUser, "users.username = ?", user.Username).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return errors.New("user not found")
+		return User{}, errors.New("user not found")
 	}
 	if loginUser.Username == user.Username && loginUser.Password == getHash(user.Password) {
-		*user = loginUser
-		return nil
+		return loginUser, nil
 	} else {
-		return errors.New("wrong password")
+		return User{}, errors.New("wrong password")
 	}
 }
 
