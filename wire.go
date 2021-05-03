@@ -14,8 +14,9 @@ import (
 )
 
 func InitializeServer() (*server.AppRouter, error) {
-	wire.Build(server.NewAppRouter, config.NewConfig, models.NewDB, vfsdata.NewStaticPaths,
+	wire.Build(server.NewAppRouter, models.NewDB, vfsdata.NewStaticPaths,
 		ssehandler.NewMessageBroker, appserver.NewAppServer,
+		config.NewConfigViper, wire.Bind(new(config.Config), new(*config.ConfigViper)),
 		models.NewAppModelDB, wire.Bind(new(models.AppModel), new(*models.AppModelDB)),
 		models.NewUserModelDB, wire.Bind(new(models.UserModel), new(*models.UserModelDB)),
 		models.NewGroupModelDB, wire.Bind(new(models.GroupModel), new(*models.GroupModelDB)),

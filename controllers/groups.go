@@ -20,7 +20,7 @@ func NewGroupController(groupModel models.GroupModel) *GroupController {
 
 func (ctl *GroupController) GetGroups() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		groups, _ := ctl.groupModel.All()
+		groups, _ := ctl.groupModel.AsMapSlice()
 		c.HTML(http.StatusOK, "groups.html", gin.H{
 			"loggedUserName": GetLoggedName(c),
 			"selTab":         "groups",
@@ -41,7 +41,7 @@ func (ctl *GroupController) GetGroup() gin.HandlerFunc {
 			return
 		}
 
-		group, err := ctl.groupModel.FindByName(groupName)
+		group, err := ctl.groupModel.Find(groupName)
 
 		if err != nil {
 			c.HTML(http.StatusNotFound, "group.html", gin.H{
@@ -83,7 +83,7 @@ func (ctl *GroupController) UpdateGroup() gin.HandlerFunc {
 		}
 
 		group := models.Group{Name: groupInfo.GroupName}
-		err = ctl.groupModel.Save(&group, oldGroupName)
+		err = ctl.groupModel.Save(group, oldGroupName)
 
 		if err != nil {
 			resMap["errorMessage"] = "Update failed. Please check provided information."
@@ -116,17 +116,17 @@ func (ctl *GroupController) RemoveGroupMember() gin.HandlerFunc {
 
 func (ctl *GroupController) DeleteGroup() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		group := models.Group{Name: c.Param("groupname")}
+		groupName := c.Param("groupname")
 		resData := gin.H{"loggedUserName": GetLoggedName(c), "selTab": "groups"}
-		err := ctl.groupModel.Delete(&group)
+		err := ctl.groupModel.Delete(groupName)
 		if err != nil {
-			resData["errorMessage"] = fmt.Sprintf("Could not delete group '%s'", group.Name)
+			resData["errorMessage"] = fmt.Sprintf("Could not delete group '%s'", groupName)
 			c.HTML(http.StatusBadRequest, "group.html", resData)
 			c.Abort()
 			return
 		}
-		resData["successMessage"] = fmt.Sprintf("Group '%s' has been deleted.", group.Name)
-		groups, err := ctl.groupModel.All()
+		resData["successMessage"] = fmt.Sprintf("Group '%s' has been deleted.", groupName)
+		groups, err := ctl.groupModel.AsMapSlice()
 		if err != nil {
 			resData["errorMessage"] = "Could not retrieve groups."
 			c.HTML(http.StatusBadRequest, "groups.html", resData)

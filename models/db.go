@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewDB(conf *config.Config) (*gorm.DB, error) {
+func NewDB(conf config.Config) (*gorm.DB, error) {
 
 	dbType := conf.GetString("database.type")
 

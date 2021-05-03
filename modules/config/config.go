@@ -12,22 +12,35 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	ExecutableFolder string
+type Config interface {
+	ExecutableFolder() string
+	GetString(string) string
+}
+
+type ConfigViper struct {
+	executableFolder string
 	v                *viper.Viper
 }
 
-func NewConfig() (*Config, error) {
+func (c *ConfigViper) ExecutableFolder() string {
+	return c.executableFolder
+}
 
-	c := &Config{
-		ExecutableFolder: ".",
+func (c *ConfigViper) GetString(key string) string {
+	return c.v.GetString(key)
+}
+
+func NewConfigViper() (*ConfigViper, error) {
+
+	c := &ConfigViper{
+		executableFolder: ".",
 	}
 
 	c.v = viper.New()
 
 	if !service.Interactive() {
 		exePath, _ := osext.ExecutableFolder()
-		c.ExecutableFolder = exePath
+		c.executableFolder = exePath
 	}
 
 	c.v.SetDefault("server.port", 8080)
@@ -53,7 +66,7 @@ func NewConfig() (*Config, error) {
 	c.v.SetDefault("RScript", RScript)
 
 	c.v.SetDefault("database.type", "sqlite")
-	c.v.SetDefault("database.path", c.ExecutableFolder+"/data.db")
+	c.v.SetDefault("database.path", c.executableFolder+"/data.db")
 
 	flag.String("mode", "prod", "run mode")
 
@@ -69,22 +82,14 @@ func NewConfig() (*Config, error) {
 	c.v.SetConfigName("config")
 	c.v.AddConfigPath("/etc/appname/")
 	c.v.AddConfigPath("$HOME/.appname")
-	c.v.AddConfigPath(c.ExecutableFolder)
+	c.v.AddConfigPath(c.executableFolder)
 
 	if err := c.v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			c.v.WriteConfigAs(c.ExecutableFolder + "/config.yaml")
+			c.v.WriteConfigAs(c.executableFolder + "/config.yaml")
 		} else {
 			return nil, err
 		}
 	}
 	return c, nil
-}
-
-func (c *Config) GetString(key string) string {
-	return c.v.GetString(key)
-}
-
-func (c *Config) Set(key string, val interface{}) {
-	c.v.Set(key, val)
 }

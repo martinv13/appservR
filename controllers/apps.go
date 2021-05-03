@@ -35,14 +35,14 @@ func (ctl *AppController) GetShinyApp() gin.HandlerFunc {
 
 		appName := c.Param("appname")
 
-		var app *models.ShinyApp
+		var app models.ShinyApp
 		var err error
 		var data gin.H
 
 		if appName != "new" {
-			app, err = ctl.appModel.FindByName(appName)
+			app, err = ctl.appModel.Find(appName)
 			if err == nil {
-				data, err = ctl.buildAppTemplateData(*app, c)
+				data, err = ctl.buildAppTemplateData(app, c)
 			}
 		}
 
@@ -159,7 +159,7 @@ func (ctl *AppController) buildAppTemplateData(app models.ShinyApp, c *gin.Conte
 
 // Build map with all apps for use in a template
 func (ctl *AppController) buildAppsTemplateData(c *gin.Context) gin.H {
-	apps := ctl.appModel.All()
+	apps, _ := ctl.appModel.All()
 	status := ctl.appServer.GetAllStatus()
 	res := make(map[string]interface{})
 	for _, a := range apps {

@@ -10,17 +10,17 @@ import (
 
 type Group struct {
 	gorm.Model
-	Name  string  `gorm:"unique"`
-	Users []*User `gorm:"many2many:user_groups;"`
+	Name  string `gorm:"unique"`
+	Users []User `gorm:"many2many:user_groups;"`
 	string
 }
 
 type GroupModel interface {
 	AllNames() ([]string, error)
-	All() ([]map[string]interface{}, error)
-	FindByName(groupName string) (*Group, error)
-	Save(group *Group, oldGroupName string) error
-	Delete(group *Group) error
+	AsMapSlice() ([]map[string]interface{}, error)
+	Find(string) (Group, error)
+	Save(group Group, oldGroupName string) error
+	Delete(groupName string) error
 	AddMember(groupName string, username string) error
 	RemoveMember(groupName string, username string) error
 }
@@ -51,7 +51,7 @@ func (m *GroupModelDB) AllNames() ([]string, error) {
 }
 
 // Get all groups
-func (m *GroupModelDB) All() ([]map[string]interface{}, error) {
+func (m *GroupModelDB) AsMapSlice() ([]map[string]interface{}, error) {
 	var groups []Group
 	err := m.DB.Preload(clause.Associations).Find(&groups).Error
 	if err != nil {
@@ -68,17 +68,17 @@ func (m *GroupModelDB) All() ([]map[string]interface{}, error) {
 }
 
 // Get a specific group with member users
-func (m *GroupModelDB) FindByName(groupName string) (*Group, error) {
+func (m *GroupModelDB) Find(groupName string) (Group, error) {
 	var group Group
 	err := m.DB.Preload(clause.Associations).First(&group, "name=?", groupName).Error
 	if err != nil {
-		return nil, fmt.Errorf("Could not find group: %s", groupName)
+		return Group{}, fmt.Errorf("Could not find group: %s", groupName)
 	}
-	return &group, nil
+	return group, nil
 }
 
 // Save group info to the database
-func (m *GroupModelDB) Save(group *Group, oldGroupName string) error {
+func (m *GroupModelDB) Save(group Group, oldGroupName string) error {
 
 	if oldGroupName == "admins" || group.Name == "admins" {
 		return errors.New("Admins group cannot be modified.")
@@ -108,11 +108,12 @@ func (m *GroupModelDB) Save(group *Group, oldGroupName string) error {
 }
 
 // Delete a specific group
-func (m *GroupModelDB) Delete(group *Group) error {
-	if group.Name == "admins" {
+func (m *GroupModelDB) Delete(groupName string) error {
+	var group Group
+	if groupName == "admins" {
 		return errors.New("Group 'admins' cannot be deleted")
 	}
-	err := m.DB.Unscoped().Where("name = ?", group.Name).Delete(&group).Error
+	err := m.DB.Unscoped().Where("name = ?", groupName).Delete(&group).Error
 	if err != nil {
 		return errors.New("Error while deleting group")
 	}

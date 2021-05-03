@@ -18,12 +18,12 @@ import (
 // Injectors from wire.go:
 
 func InitializeServer() (*server.AppRouter, error) {
-	configConfig, err := config.NewConfig()
+	configViper, err := config.NewConfigViper()
 	if err != nil {
 		return nil, err
 	}
-	staticPaths := vfsdata.NewStaticPaths(configConfig)
-	db, err := models.NewDB(configConfig)
+	staticPaths := vfsdata.NewStaticPaths(configViper)
+	db, err := models.NewDB(configViper)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func InitializeServer() (*server.AppRouter, error) {
 		return nil, err
 	}
 	messageBroker := ssehandler.NewMessageBroker()
-	appServer, err := appserver.NewAppServer(appModelDB, messageBroker, configConfig)
+	appServer, err := appserver.NewAppServer(appModelDB, messageBroker, configViper)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func InitializeServer() (*server.AppRouter, error) {
 	userController := controllers.NewUserController(userModelDB)
 	groupController := controllers.NewGroupController(groupModelDB)
 	authController := controllers.NewAuthController(userModelDB)
-	appRouter, err := server.NewAppRouter(configConfig, staticPaths, appServer, messageBroker, appController, userController, groupController, authController)
+	appRouter, err := server.NewAppRouter(configViper, staticPaths, appServer, messageBroker, appController, userController, groupController, authController)
 	if err != nil {
 		return nil, err
 	}

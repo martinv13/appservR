@@ -26,14 +26,14 @@ type StaticPaths struct {
 	Templates HybridFileSystem
 }
 
-func NewStaticPaths(c *config.Config) *StaticPaths {
+func NewStaticPaths(c config.Config) *StaticPaths {
 	return &StaticPaths{
 		Assets: HybridFileSystem{
-			LocalFS:   http.Dir(c.ExecutableFolder + "/assets"),
+			LocalFS:   http.Dir(c.ExecutableFolder() + "/assets"),
 			BundledFS: assets.BundledAssets,
 		},
 		Templates: HybridFileSystem{
-			LocalFS:   http.Dir(c.ExecutableFolder + "/templates"),
+			LocalFS:   http.Dir(c.ExecutableFolder() + "/templates"),
 			BundledFS: templates.BundledTemplates,
 		},
 	}

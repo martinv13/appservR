@@ -21,7 +21,7 @@ type AppSourceDir struct {
 	err    error
 }
 
-func NewAppSource(app models.ShinyApp, conf *config.Config) AppSource {
+func NewAppSource(app models.ShinyApp, conf config.Config) AppSource {
 	if app.AppSource == "sample-app" {
 		return NewAppSourceSampleApp(app, conf)
 	} else {
@@ -29,10 +29,10 @@ func NewAppSource(app models.ShinyApp, conf *config.Config) AppSource {
 	}
 }
 
-func NewAppSourceDir(app models.ShinyApp, conf *config.Config) *AppSourceDir {
+func NewAppSourceDir(app models.ShinyApp, conf config.Config) *AppSourceDir {
 	path := app.AppDir
 	if !filepath.IsAbs(path) {
-		path = filepath.Join(conf.ExecutableFolder, path)
+		path = filepath.Join(conf.ExecutableFolder(), path)
 	}
 	_, err := os.Stat(path)
 	if err != nil {
@@ -41,8 +41,8 @@ func NewAppSourceDir(app models.ShinyApp, conf *config.Config) *AppSourceDir {
 	return &AppSourceDir{AppDir: path}
 }
 
-func NewAppSourceSampleApp(app models.ShinyApp, conf *config.Config) *AppSourceDir {
-	path := conf.ExecutableFolder + "/shinyapps"
+func NewAppSourceSampleApp(app models.ShinyApp, conf config.Config) *AppSourceDir {
+	path := conf.ExecutableFolder() + "/shinyapps"
 	_, err := os.Stat(path)
 	if err != nil {
 		err = os.Mkdir(path, os.ModeDir)

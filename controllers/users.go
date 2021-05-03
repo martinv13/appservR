@@ -48,7 +48,7 @@ func (userCtl *UserController) GetUser() gin.HandlerFunc {
 			return
 		}
 
-		user, err := userCtl.userModel.FindByUsername(username)
+		user, err := userCtl.userModel.Find(username)
 
 		if err != nil {
 			c.HTML(http.StatusBadRequest, "user.html", gin.H{
@@ -84,16 +84,16 @@ func (userCtl *UserController) AdminUpdateUser() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		groups := make([]*models.Group, len(info.Groups), len(info.Groups))
+		groups := make([]models.Group, len(info.Groups), len(info.Groups))
 		isAdmin := false
 		for i := range info.Groups {
-			groups[i] = &models.Group{Name: info.Groups[i]}
+			groups[i] = models.Group{Name: info.Groups[i]}
 			isAdmin = isAdmin || groups[i].Name == "admins"
 		}
 		loggedUser, ok := c.Get("username")
 		if ok {
 			if username == loggedUser && !isAdmin {
-				groups = append(groups, &models.Group{Name: "admins"})
+				groups = append(groups, models.Group{Name: "admins"})
 			}
 		}
 		user := models.User{
@@ -122,8 +122,12 @@ func (userCtl *UserController) DeleteUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		username := c.Param("username")
 		resData := gin.H{"loggedUserName": GetLoggedName(c), "selTab": "users"}
-		err := userCtl.userModel.DeleteByUsername(username)
-		if err != nil {
+		loggedUsername, ok := c.Get("username")
+		var err error
+		if ok && username != loggedUsername {
+			err = userCtl.userModel.Delete(username)
+		}
+		if !ok || username == loggedUsername || err != nil {
 			resData["errorMessage"] = fmt.Sprintf("Could note delete user '%s'.", username)
 			c.HTML(http.StatusBadRequest, "user.html", resData)
 			c.Abort()
@@ -144,7 +148,7 @@ func (userCtl *UserController) DeleteUser() gin.HandlerFunc {
 
 // Get user data
 func (ctl *UserController) buildUserTemplateData(user models.User, c *gin.Context) map[string]interface{} {
-	res := ctl.userModel.AsMap(user)
+	res, _ := ctl.userModel.AsMap(user)
 	res["selTab"] = "users"
 	res["loggedUserName"] = GetLoggedName(c)
 	return res
@@ -152,10 +156,7 @@ func (ctl *UserController) buildUserTemplateData(user models.User, c *gin.Contex
 
 // Get all users data
 func (ctl *UserController) buildUsersTemplateData(users []models.User, c *gin.Context) map[string]interface{} {
-	usersData := make([]map[string]interface{}, len(users), len(users))
-	for i, user := range users {
-		usersData[i] = ctl.userModel.AsMap(user)
-	}
+	usersData, _ := ctl.userModel.AsMapSlice(users)
 	return map[string]interface{}{
 		"selTab":         "users",
 		"loggedUserName": GetLoggedName(c),

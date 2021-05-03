@@ -17,22 +17,25 @@ import (
 type AppServer struct {
 	sync.RWMutex
 	broker     *ssehandler.MessageBroker
-	config     *config.Config
+	config     config.Config
 	appsByName map[string]*AppProxy
 	byPath     []*AppProxy
 }
 
 // Create a new struct to hold running app proxies
-func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker, config *config.Config) (*AppServer, error) {
+func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker, config config.Config) (*AppServer, error) {
 	appServer := AppServer{
 		broker:     msgBroker,
 		appsByName: make(map[string]*AppProxy),
 		byPath:     []*AppProxy{},
 		config:     config,
 	}
-	apps := appModel.All()
+	apps, err := appModel.All()
+	if err != nil {
+		return nil, err
+	}
 	for i := range apps {
-		app, err := NewAppProxy(*apps[i], msgBroker, config)
+		app, err := NewAppProxy(apps[i], msgBroker, config)
 		appServer.appsByName[apps[i].AppName] = app
 		if err != nil {
 			return nil, err

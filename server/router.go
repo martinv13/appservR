@@ -17,11 +17,11 @@ import (
 
 type AppRouter struct {
 	router *gin.Engine
-	config *config.Config
+	config config.Config
 }
 
 // Create the router instance
-func NewAppRouter(config *config.Config, staticPaths *vfsdata.StaticPaths,
+func NewAppRouter(config config.Config, staticPaths *vfsdata.StaticPaths,
 	appServer *appserver.AppServer, msgBroker *ssehandler.MessageBroker,
 	appsCtl *controllers.AppController, usersCtl *controllers.UserController,
 	groupsCtl *controllers.GroupController, authCtl *controllers.AuthController) (*AppRouter, error) {

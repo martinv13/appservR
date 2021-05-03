@@ -4,19 +4,33 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/martinv13/go-shiny/modules/config"
 	"gorm.io/gorm"
 )
 
+type MockConfig struct {
+	keys map[string]string
+}
+
+func (c *MockConfig) ExecutableFolder() string {
+	return "."
+}
+
+func (c *MockConfig) GetString(key string) string {
+	res, ok := c.keys[key]
+	if ok {
+		return res
+	}
+	return ""
+}
+
 func setUp() (*gorm.DB, error) {
 
-	conf, err := config.NewConfig()
-	if err != nil {
-		return nil, errors.New("unable to initialize config")
+	conf := &MockConfig{
+		keys: map[string]string{
+			"database.type": "sqlite",
+			"database.path": "memory",
+		},
 	}
-
-	conf.Set("database.type", "sqlite")
-	conf.Set("database.path", "memory")
 
 	db, err := NewDB(conf)
 
@@ -58,13 +72,14 @@ func TestDataModelDB(t *testing.T) {
 		if err != nil {
 			t.Error("failed to create non-admin user")
 		}
-		user, err := userModel.FindByUsername("admin")
+		user, err := userModel.Find("admin")
 		if err != nil {
 			t.Error("failed to find admin user")
 		}
-		userData := userModel.AsMap(user)
+		userData, err := userModel.AsMap(user)
 		groups := userData["Groups"].(map[string]bool)
-		if gr, ok := groups["admins"]; len(groups) != 1 || !ok || !gr || len(user.Groups) != 1 || user.Groups[0].Name != "admins" {
+		gr, ok := groups["admins"]
+		if err != nil || len(groups) != 1 || !ok || !gr || len(user.Groups) != 1 || user.Groups[0].Name != "admins" {
 			t.Error("user not registered as admin")
 		}
 		user1 := User{Username: "user1", Password: "test"}
@@ -77,22 +92,23 @@ func TestDataModelDB(t *testing.T) {
 		if err == nil {
 			t.Error("login should fail")
 		}
-		userData = userModel.AsMap(user1)
+		userData, err = userModel.AsMap(user1)
 		groups = userData["Groups"].(map[string]bool)
-		if gr, ok := groups["admins"]; len(groups) != 1 || !ok || gr || len(user1.Groups) != 0 {
+		gr, ok = groups["admins"]
+		if err != nil || len(groups) != 1 || !ok || gr || len(user1.Groups) != 0 {
 			t.Error("user should not be admin")
 		}
 	})
 
 	t.Run("app=find", func(t *testing.T) {
-		_, err := appModel.FindByName("sample-app")
+		_, err := appModel.Find("sample-app")
 		if err != nil {
 			t.Error("cannot get default app")
 		}
 	})
 	t.Run("app=all", func(t *testing.T) {
-		apps := appModel.All()
-		if len(apps) != 1 {
+		apps, err := appModel.All()
+		if err != nil || len(apps) != 1 {
 			t.Error("did not return exactly one app")
 		}
 	})

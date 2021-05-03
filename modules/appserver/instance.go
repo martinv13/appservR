@@ -19,7 +19,23 @@ type appInstance struct {
 	Port    string
 	StdErr  string
 	Cmd     *exec.Cmd
-	config  *config.Config
+	config  config.Config
+}
+
+type instStatusType struct {
+	STARTING    string
+	RUNNING     string
+	PHASING_OUT string
+	ERROR       string
+	STOPPED     string
+}
+
+var instStatus = instStatusType{
+	STARTING:    "STARTING",
+	RUNNING:     "RUNNING",
+	PHASING_OUT: "PHASING_OUT",
+	ERROR:       "ERROR",
+	STOPPED:     "STOPPED",
 }
 
 // Start an instance of the app and relaunch when it fails
@@ -31,11 +47,11 @@ func (inst *appInstance) Start() error {
 	inst.Port = port
 	_, err = os.Stat(inst.AppDir)
 	if err != nil {
-		inst.Status = "ERROR"
+		inst.Status = instStatus.ERROR
 		inst.StdErr = "App source directory does not exist"
 		return errors.New("App source directory does not exist")
 	}
-	inst.Status = "STARTING"
+	inst.Status = instStatus.STARTING
 	cmd := exec.Command(inst.config.GetString("Rscript"), "-e", "shiny::runApp('.', port="+inst.Port+")")
 	cmd.Dir = inst.AppDir
 	cmd.Env = os.Environ()
@@ -52,7 +68,7 @@ func (inst *appInstance) Start() error {
 			line := scanner.Text()
 			inst.StdErr += line + "\n"
 			if strings.HasPrefix(line, "Listening on") {
-				inst.Status = "RUNNING"
+				inst.Status = instStatus.RUNNING
 				fmt.Println("app " + inst.AppName + " at " + inst.Port + " is running")
 				return
 			}
@@ -74,8 +90,8 @@ func (inst *appInstance) Start() error {
 
 // Mark an app instance as phasing out - not accepting new users before it can be stopped
 func (inst *appInstance) PhaseOut() {
-	if inst.Status == "RUNNING" {
-		inst.Status = "PHASEOUT"
+	if inst.Status == instStatus.RUNNING {
+		inst.Status = instStatus.PHASING_OUT
 	} else {
 		inst.Stop()
 	}
@@ -89,7 +105,7 @@ func (inst *appInstance) Stop() error {
 			return err
 		}
 	}
-	inst.Status = "STOPPED"
+	inst.Status = instStatus.STOPPED
 	portspool.Release(inst.Port)
 	return nil
 }

@@ -39,11 +39,11 @@ type AppProxy struct {
 	Instances    map[int]*appInstance
 	nextID       int
 	Sessions     map[string]*Session
-	config       *config.Config
+	config       config.Config
 }
 
 // Create a new app proxy
-func NewAppProxy(app models.ShinyApp, msgBroker *ssehandler.MessageBroker, config *config.Config) (*AppProxy, error) {
+func NewAppProxy(app models.ShinyApp, msgBroker *ssehandler.MessageBroker, config config.Config) (*AppProxy, error) {
 
 	appProxy := &AppProxy{
 		ShinyApp:     app,
@@ -101,7 +101,7 @@ func (p *AppProxy) Update(app models.ShinyApp) {
 	if !app.Active {
 		p.phaseOut(false)
 	} else {
-		if prevApp.AppDir != app.AppDir || !prevApp.Active {
+		if prevApp.AppDir != app.AppDir || !prevApp.Active || prevApp.Workers != app.Workers {
 			p.phaseOut(true)
 		}
 	}
@@ -111,13 +111,13 @@ func (p *AppProxy) Update(app models.ShinyApp) {
 func (app *AppProxy) GetStatus(detailed bool) map[string]interface{} {
 
 	nbRunning := 0
-	nbRollingout := 0
+	nbPhasingOut := 0
 	stdErr := []string{}
 	for _, i := range app.Instances {
-		if i.Status == "RUNNING" {
+		if i.Status == instStatus.RUNNING {
 			nbRunning++
-		} else if i.Status == "ROLLING_OUT" {
-			nbRollingout++
+		} else if i.Status == instStatus.PHASING_OUT {
+			nbPhasingOut++
 		}
 		if detailed {
 			stdErr = append(stdErr, i.StdErr)
@@ -125,7 +125,7 @@ func (app *AppProxy) GetStatus(detailed bool) map[string]interface{} {
 	}
 	status := map[string]interface{}{
 		"RunningInst":    nbRunning,
-		"RollingOutInst": nbRollingout,
+		"PhasingOutInst": nbPhasingOut,
 		"ConnectedUsers": len(app.Sessions),
 	}
 	if detailed {
@@ -166,13 +166,13 @@ func (appProxy *AppProxy) GetSession(sessionID string) (*Session, error) {
 	session, ok := appProxy.Sessions[sessionID]
 
 	if ok {
-		if session.Instance.Status == "RUNNING" {
+		if session.Instance.Status == instStatus.RUNNING {
 			session.lastActive = time.Now().Unix()
 			return session, nil
 		}
 		if len(appProxy.Instances) > 0 {
 			for _, inst := range appProxy.Instances {
-				if inst.Status == "RUNNING" {
+				if inst.Status == instStatus.RUNNING {
 					session.Instance = inst
 					session.lastActive = time.Now().Unix()
 					return session, nil
@@ -183,7 +183,7 @@ func (appProxy *AppProxy) GetSession(sessionID string) (*Session, error) {
 
 	if len(appProxy.Instances) > 0 {
 		for _, inst := range appProxy.Instances {
-			if inst.Status == "RUNNING" {
+			if inst.Status == instStatus.RUNNING {
 				now := time.Now().Unix()
 				session = &Session{
 					ID:         uuid.NewV4().String(),

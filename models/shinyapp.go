@@ -3,101 +3,92 @@ package models
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"gorm.io/gorm"
 )
 
 type ShinyApp struct {
 	gorm.Model
-	AppName        string `gorm:"unique"`
-	Path           string
-	AppSource      string
-	AppDir         string
-	Workers        int
-	Active         bool
-	RestrictAccess bool
-	AllowedGroups  []*Group `gorm:"many2many:app_allowed_groups;"`
+	AppName         string `gorm:"unique"`
+	Path            string
+	AppSource       string
+	AppDir          string
+	GitSourceUrl    string
+	GitSourceBranch string
+	GitSourceToken  string
+	Workers         int
+	Active          bool
+	RestrictAccess  bool
+	AllowedGroups   []Group `gorm:"many2many:app_allowed_groups;"`
 }
 
 type AppModel interface {
-	All() []*ShinyApp
-	FindByName(appName string) (*ShinyApp, error)
+	All() ([]ShinyApp, error)
+	Find(appName string) (ShinyApp, error)
 	Save(app ShinyApp, oldAppName string) error
 	Delete(appName string) error
 	AsMap(app ShinyApp) (map[string]interface{}, error)
+	AsMapSlice(apps []ShinyApp) ([]map[string]interface{}, error)
 }
 
 type AppModelDB struct {
-	sync.RWMutex
 	DB         *gorm.DB
 	groupModel *GroupModelDB
-	apps       map[string]*ShinyApp
 }
 
 func NewAppModelDB(db *gorm.DB, groupModel *GroupModelDB) (*AppModelDB, error) {
 
 	appModel := AppModelDB{
 		DB:         db,
-		apps:       map[string]*ShinyApp{},
 		groupModel: groupModel,
 	}
 
-	apps := []*ShinyApp{}
+	app := ShinyApp{}
 
-	err := db.Find(&apps).Error
+	err := db.First(&app).Error
 	if err != nil {
-		return nil, err
-	}
-
-	if len(apps) == 0 {
-		defaultApp := ShinyApp{
-			AppName:        "sample-app",
-			Path:           "/",
-			AppSource:      "sample-app",
-			Workers:        2,
-			Active:         true,
-			RestrictAccess: false,
-		}
-		err = db.Create(&defaultApp).Error
-		if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, err
+		} else {
+			defaultApp := ShinyApp{
+				AppName:        "sample-app",
+				Path:           "/",
+				AppSource:      "sample-app",
+				Workers:        2,
+				Active:         true,
+				RestrictAccess: false,
+			}
+			err = db.Create(&defaultApp).Error
+			if err != nil {
+				return nil, err
+			}
 		}
-		apps = append(apps, &defaultApp)
 	}
-
-	appModel.Lock()
-	for _, app := range apps {
-		appModel.apps[app.AppName] = app
-	}
-	appModel.Unlock()
-
 	return &appModel, nil
-
 }
 
 // Get all apps
-func (m *AppModelDB) All() []*ShinyApp {
-	m.RLock()
-	defer m.RUnlock()
-	apps := make([]*ShinyApp, len(m.apps), len(m.apps))
-	j := 0
-	for i := range m.apps {
-		apps[j] = m.apps[i]
-		j++
+func (m *AppModelDB) All() ([]ShinyApp, error) {
+	var apps []ShinyApp
+	err := m.DB.Find(&apps).Error
+	if err != nil {
+		return []ShinyApp{}, errors.New("Unable to retrieve apps")
 	}
-	return apps
+	return apps, nil
 }
 
 // Find a specific app by app name
-func (m *AppModelDB) FindByName(appName string) (*ShinyApp, error) {
-	m.RLock()
-	defer m.RUnlock()
-	res, ok := m.apps[appName]
-	if ok {
-		return res, nil
+func (m *AppModelDB) Find(appName string) (ShinyApp, error) {
+	var app ShinyApp
+	err := m.DB.First(&app, "app_name = ?", appName).Error
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return ShinyApp{}, errors.New("Unable to retrieve app from db")
+		} else {
+			return ShinyApp{}, fmt.Errorf("App %s does not exist.", appName)
+		}
 	}
-	return nil, errors.New("App not found")
+	return app, nil
 }
 
 // Create or update a shinyapp to the database
@@ -128,9 +119,6 @@ func (m *AppModelDB) Save(app ShinyApp, oldAppName string) error {
 		if err != nil {
 			return errors.New("Failed to create new app")
 		}
-		m.Lock()
-		m.apps[app.AppName] = &app
-		m.Unlock()
 		return nil
 	}
 
@@ -141,12 +129,15 @@ func (m *AppModelDB) Save(app ShinyApp, oldAppName string) error {
 		return fmt.Errorf("Update failed. Could not find app: %s", oldAppName)
 	}
 	updateMap := map[string]interface{}{
-		"AppName":        app.AppName,
-		"Path":           app.Path,
-		"AppDir":         app.AppDir,
-		"Workers":        app.Workers,
-		"Active":         app.Active,
-		"RestrictAccess": app.RestrictAccess,
+		"AppName":         app.AppName,
+		"Path":            app.Path,
+		"AppDir":          app.AppDir,
+		"GitSourceUrl":    app.GitSourceUrl,
+		"GitSourceBranch": app.GitSourceBranch,
+		"GitSourceToken":  app.GitSourceToken,
+		"Workers":         app.Workers,
+		"Active":          app.Active,
+		"RestrictAccess":  app.RestrictAccess,
 	}
 
 	tx := m.DB.Begin()
@@ -162,31 +153,29 @@ func (m *AppModelDB) Save(app ShinyApp, oldAppName string) error {
 	}
 	tx.Commit()
 
-	m.Lock()
-	if _, ok := m.apps[oldAppName]; ok {
-		delete(m.apps, oldAppName)
-	}
-	m.apps[app.AppName] = &app
-	m.Unlock()
-
 	return nil
 }
 
 // Delete an app
 func (m *AppModelDB) Delete(appName string) error {
-	m.Lock()
-	defer m.Unlock()
-	if _, ok := m.apps[appName]; ok {
-		app := ShinyApp{}
-		err := m.DB.Unscoped().Where("app_name = ?", appName).Delete(&app).Error
-		if err != nil {
-			return fmt.Errorf("Error while deleting app: %s", appName)
-		}
-		delete(m.apps, appName)
-		return nil
-	} else {
-		return errors.New("App not found")
+	var app ShinyApp
+	err := m.DB.Unscoped().Where("app_name = ?", appName).Delete(&app).Error
+	if err != nil {
+		return fmt.Errorf("Error while deleting app: %s", appName)
 	}
+	return nil
+}
+
+// Get an app as a map, directly usable in template
+func (m *AppModelDB) groupsMap(allowedGroups []Group, allGroups []string) map[string]bool {
+	groupsMap := make(map[string]bool)
+	for _, g := range allGroups {
+		groupsMap[g] = false
+	}
+	for _, g := range allowedGroups {
+		groupsMap[g.Name] = true
+	}
+	return groupsMap
 }
 
 // Get an app as a map, directly usable in template
@@ -195,25 +184,35 @@ func (m *AppModelDB) AsMap(app ShinyApp) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, errors.New("Unable to retrieve groups")
 	}
-	groups := make(map[string]bool)
-	for _, g := range allGroups {
-		groups[g] = false
+	return map[string]interface{}{
+		"AppName":         app.AppName,
+		"Path":            app.Path,
+		"AppDir":          app.AppDir,
+		"GitSourceUrl":    app.GitSourceUrl,
+		"GitSourceBranch": app.GitSourceBranch,
+		"GitSourceToken":  app.GitSourceToken,
+		"Workers":         app.Workers,
+		"Active":          app.Active,
+		"RestrictAccess":  app.RestrictAccess,
+		"AllowedGroups":   m.groupsMap(app.AllowedGroups, allGroups),
+	}, nil
+}
+
+// Get a slice of apps as a slice of maps, directly usable in template
+func (m *AppModelDB) AsMapSlice(apps []ShinyApp) ([]map[string]interface{}, error) {
+	allGroups, err := m.groupModel.AllNames()
+	if err != nil {
+		return nil, errors.New("Unable to retrieve groups")
 	}
-	allowedGroups := app.AllowedGroups
-	if allowedGroups == nil {
-		allowedGroups = make([]*Group, 0)
+	appsMap := make([]map[string]interface{}, len(apps), len(apps))
+	for i, app := range apps {
+		appsMap[i] = map[string]interface{}{
+			"AppName":        app.AppName,
+			"Path":           app.Path,
+			"Active":         app.Active,
+			"RestrictAccess": app.RestrictAccess,
+			"AllowedGroups":  m.groupsMap(app.AllowedGroups, allGroups),
+		}
 	}
-	for _, g := range allowedGroups {
-		groups[g.Name] = true
-	}
-	res := map[string]interface{}{
-		"AppName":        app.AppName,
-		"Path":           app.Path,
-		"AppDir":         app.AppDir,
-		"Workers":        app.Workers,
-		"Active":         app.Active,
-		"RestrictAccess": app.RestrictAccess,
-		"AllowedGroups":  groups,
-	}
-	return res, nil
+	return appsMap, nil
 }
