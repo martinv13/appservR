@@ -16,6 +16,8 @@ require (
 	github.com/mitchellh/mapstructure v1.4.0 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/satori/go.uuid v1.2.0
+	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
+	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/afero v1.4.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
