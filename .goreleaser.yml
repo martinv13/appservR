@@ -3,19 +3,43 @@ before:
     - go mod tidy
     - go generate ./...
 builds:
-  - env:
-      - CGO_ENABLED=0
+  - 
+    id: "windows_i686"
+    env:
+      - CGO_ENABLED=1
+      - CXX=i686-w64-mingw32-g++ 
+      - CC=i686-w64-mingw32-gcc
+    goos:
+      - windows
+    goarch:
+      - 386
+  - 
+    id: "windows_64"
+    env:
+      - CGO_ENABLED=1
+      - CXX=x86_64-w64-mingw32-g++ 
+      - CC=x86_64-w64-mingw32-gcc
+    goos:
+      - windows
+    goarch:
+      - amd64
+  - 
+    id: "linux"
+    env:
+      - CGO_ENABLED=1
     goos:
       - linux
-      - windows
-      - darwin
+    goarch:
+      - amd64
 archives:
   - replacements:
-      darwin: Darwin
       linux: Linux
       windows: Windows
       386: i386
       amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:

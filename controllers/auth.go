@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/martinv13/go-shiny/models"
@@ -56,7 +57,11 @@ func (ctl *AuthController) DoLogin() gin.HandlerFunc {
 				HttpOnly: true,
 			}
 			http.SetCookie(c.Writer, &cookie)
-			c.Redirect(http.StatusFound, credentials.Referer)
+			ref := credentials.Referer
+			if strings.HasSuffix(ref, "/auth/signup") {
+				ref = "/"
+			}
+			c.Redirect(http.StatusFound, ref)
 		} else {
 			c.HTML(http.StatusUnauthorized, "login.html",
 				gin.H{

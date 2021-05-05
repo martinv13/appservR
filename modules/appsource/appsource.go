@@ -45,7 +45,7 @@ func NewAppSourceSampleApp(app models.ShinyApp, conf config.Config) *AppSourceDi
 	path := conf.ExecutableFolder() + "/shinyapps"
 	_, err := os.Stat(path)
 	if err != nil {
-		err = os.Mkdir(path, os.ModeDir)
+		err = os.Mkdir(path, 0700)
 		if err != nil {
 			return &AppSourceDir{AppDir: "", err: fmt.Errorf("Unable to create directory %s", path)}
 		}
@@ -53,7 +53,7 @@ func NewAppSourceSampleApp(app models.ShinyApp, conf config.Config) *AppSourceDi
 	path = path + "/sample-app"
 	_, err = os.Stat(path)
 	if err != nil {
-		err = os.Mkdir(path, os.ModeDir)
+		err = os.Mkdir(path, 0700)
 		if err != nil {
 			return &AppSourceDir{AppDir: "", err: fmt.Errorf("Unable to create directory %s", path)}
 		}
