@@ -3,7 +3,6 @@ package appserver
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -46,7 +45,7 @@ var instStatus = struct {
 // Create a new instance of the app
 func NewInstance(appName string, appDir string, conf config.Config) *Instance {
 	inst := &Instance{
-		ID:      uuid.NewV4().String(),
+		ID:      uuid.NewV4().String()[0:6],
 		appName: appName,
 		appDir:  appDir,
 		config:  conf,
@@ -87,6 +86,7 @@ func (inst *Instance) StdErr() string {
 func (inst *Instance) Start() error {
 	inst.Lock()
 	defer inst.Unlock()
+	logger := inst.config.Logger()
 	port, err := portspool.GetNext()
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (inst *Instance) Start() error {
 			inst.stdErr += line + "\n"
 			if strings.HasPrefix(line, "Listening on") {
 				inst.status = instStatus.RUNNING
-				fmt.Println("app " + inst.appName + " at " + inst.port + " is running")
+				logger.Info("app " + inst.appName + " at " + inst.port + " is running (" + inst.ID + ")")
 				inst.Unlock()
 				return
 			}
@@ -125,6 +125,7 @@ func (inst *Instance) Start() error {
 	}()
 
 	// Actually starting the subprocess
+	logger.Info("starting app " + inst.appName + " (" + inst.ID + ")")
 	if err = cmd.Start(); err != nil {
 		return err
 	}
@@ -136,8 +137,11 @@ func (inst *Instance) Start() error {
 		defer inst.Unlock()
 		restart := inst.status != instStatus.PHASING_OUT
 		if err != nil {
+			logger.Info(inst.appName + " instance exited with error (" + inst.ID + ")")
+			logger.Info(err.Error())
 			inst.status = instStatus.ERROR
 		} else {
+			logger.Info(inst.appName + " instance exited successfully (" + inst.ID + ")")
 			inst.status = instStatus.STOPPED
 		}
 		if restart {

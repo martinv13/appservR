@@ -4,24 +4,29 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"sync"
 )
 
-var inUse = make(map[string]bool)
-var rangeStart = 4000
-
-func Init(startPort int) {
-	rangeStart = startPort
+var portsPool = struct {
+	sync.Mutex
+	inUse      map[string]bool
+	rangeStart int
+}{
+	inUse:      make(map[string]bool),
+	rangeStart: 4000,
 }
 
 func GetNext() (string, error) {
-	for port := rangeStart; port < rangeStart+1000; port++ {
+	portsPool.Lock()
+	defer portsPool.Unlock()
+	for port := portsPool.rangeStart; port < portsPool.rangeStart+1000; port++ {
 		strPort := strconv.Itoa(port)
-		_, ok := inUse[strPort]
+		_, ok := portsPool.inUse[strPort]
 		if !ok {
 			ln, err := net.Listen("tcp", ":"+strPort)
+			portsPool.inUse[strPort] = true
 			if err == nil {
 				ln.Close()
-				inUse[strPort] = true
 				return strPort, nil
 			}
 		}
@@ -30,5 +35,7 @@ func GetNext() (string, error) {
 }
 
 func Release(port string) {
-	delete(inUse, port)
+	portsPool.Lock()
+	defer portsPool.Unlock()
+	delete(portsPool.inUse, port)
 }

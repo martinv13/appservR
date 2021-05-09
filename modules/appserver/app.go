@@ -121,7 +121,15 @@ func (p *AppProxy) Rescale() {
 	}()
 	nbInst := 0
 	for _, inst := range p.Instances {
-		if inst.Status() != instStatus.PHASING_OUT {
+		status := inst.Status()
+		if status == instStatus.PHASING_OUT {
+			if inst.UserCount() == 0 {
+				err := inst.Stop()
+				if err == nil {
+					delete(p.Instances, inst.ID)
+				}
+			}
+		} else {
 			nbInst++
 		}
 	}
@@ -191,6 +199,15 @@ func (p *AppProxy) Update(app models.ShinyApp) {
 		p.phaseOut()
 	} else if prevApp.Workers != app.Workers {
 		go p.Rescale()
+	}
+}
+
+// Remove an instance which has been stopped
+func (p *AppProxy) DeleteInstance(ID string) {
+	p.Lock()
+	defer p.Unlock()
+	if _, ok := p.Instances[ID]; ok {
+		delete(p.Instances, ID)
 	}
 }
 

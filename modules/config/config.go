@@ -8,6 +8,7 @@ import (
 
 	"github.com/kardianos/osext"
 	"github.com/kardianos/service"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -15,11 +16,13 @@ import (
 type Config interface {
 	ExecutableFolder() string
 	GetString(string) string
+	Logger() *Logger
 }
 
 type ConfigViper struct {
 	executableFolder string
 	v                *viper.Viper
+	logger           Logger
 }
 
 func (c *ConfigViper) ExecutableFolder() string {
@@ -30,10 +33,15 @@ func (c *ConfigViper) GetString(key string) string {
 	return c.v.GetString(key)
 }
 
-func NewConfigViper() (*ConfigViper, error) {
+func (c *ConfigViper) Logger() *Logger {
+	return &c.logger
+}
+
+func NewConfigViper(cmd *cobra.Command) (*ConfigViper, error) {
 
 	c := &ConfigViper{
 		executableFolder: ".",
+		logger:           NewLogger(logLevels.DEBUG),
 	}
 
 	c.v = viper.New()
