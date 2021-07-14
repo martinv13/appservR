@@ -1,20 +1,20 @@
-# Go-Shiny
+# AppservR
 
-Go-Shiny allows deploying R Shiny applications in production on your server, hassle free. As a standalone binary with no dependency except R itself, you can use it on any platform to serve Shiny apps to your users.
+AppservR allows deploying R Shiny applications easily on your server. Distributed as a standalone binary with no dependency except R itself, it can be used on any platform to serve Shiny apps to your users.
 
-Under the hood, Go-Shiny manage several instances of your apps, using Rscript executable, and proxy requests from your users to these instances.
+Under the hood, AppservR manages several instances of your apps, using Rscript executable, and proxy requests from your users to these instances.
 
-This project is not suited for production use yet and is in active development.
+This project is not suited for production use yet and is in active development. Pre-prod releases can be found on the [releases page](https://github.com/appservR/appservR/releases).
 
 ## Features
 
-As R is a single-process software, deploying R apps at scale often requires third-party software to allow dealing with multiple clients at the same time. Go-Shiny achieves this with a ready-to-use, cross platform binary with no dependencies. It aims at simplicity, while not giving up on performance. Its distinctive features compared to other solutions are the following:
+As R is a single-process software, deploying R apps often requires third-party software to allow dealing with multiple clients at the same time. AppservR achieves this with a ready-to-use, cross platform binary with no dependencies. It aims at simplicity, while not giving up on performance. Its distinctive features compared to other solutions are the following:
 
 * **Cross platform**: written in the Go programming language, it runs on every platform R runs on,
-* **No dependencies**: Go-Shiny does not require Java, Docker or other dependency; it ships as a standalone binary which simply runs your apps using the Rscript executable from your R installation and proxy client requests accordingly,
+* **No dependencies**: AppservR does not require Java, Docker or other dependency; it ships as a standalone binary which simply runs your apps using the Rscript executable from your R installation and proxy client requests accordingly,
 * **Authentication**: built in authentication to restrict access to specific apps or customize user experience,
 * **Unlimited apps**: you can run as many apps as you wish on different paths, including nested paths (i.e. for instance "/" and "/myapp" and "/myapp/private"),
-* **Hot config**: you can configure your apps through a web interface without restarting the server, which means that you do not need admin permissions on the server to add or update a Shiny app, but only a Go-Shiny admin account.
+* **Hot config**: you can configure your apps through a web interface without restarting the server, which means that you do not need admin permissions on the server to add or update a Shiny app, but only a AppservR admin account.
 
 ## Install
 
@@ -26,4 +26,5 @@ No prod release is available yet (coming soon).
 
 ## Alternatives
 
-[Rstudio](https://rstudio.com) offer professional solutions to Shiny apps deployment (no free version for multi-process server). [ShinyProxy](https://www.openanalytics.eu/tags/shinyproxy/) is an other solution (free) with a different approach as it runs a new Shiny app instance in a new Docker container for every client of your app.
+[Rstudio](https://rstudio.com) offer professional solutions to Shiny apps deployment (no free version for multi-process server however). 
+[ShinyProxy](https://www.openanalytics.eu/tags/shinyproxy/) is an other open-source solution with a different approach as it runs a new Shiny app instance in a new Docker container for every client of your app.
