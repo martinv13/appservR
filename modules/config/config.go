@@ -1,17 +1,19 @@
 package config
 
 import (
-	"flag"
-	"fmt"
 	"os"
 	"runtime"
 
 	"github.com/kardianos/osext"
 	"github.com/kardianos/service"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
+
+type RunFlags struct {
+	Address string
+	Mode    string
+	Port    string
+}
 
 type Config interface {
 	ExecutableFolder() string
@@ -37,11 +39,10 @@ func (c *ConfigViper) Logger() *Logger {
 	return &c.logger
 }
 
-func NewConfigViper(cmd *cobra.Command) (*ConfigViper, error) {
+func NewConfigViper(flags RunFlags) (*ConfigViper, error) {
 
 	c := &ConfigViper{
 		executableFolder: ".",
-		logger:           NewLogger(logLevels.DEBUG),
 	}
 
 	c.v = viper.New()
@@ -76,17 +77,6 @@ func NewConfigViper(cmd *cobra.Command) (*ConfigViper, error) {
 	c.v.SetDefault("database.type", "sqlite")
 	c.v.SetDefault("database.path", c.executableFolder+"/data.db")
 
-	flag.String("mode", "prod", "run mode")
-
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	pflag.Parse()
-	c.v.BindPFlags(pflag.CommandLine)
-
-	flag.Usage = func() {
-		fmt.Println("Usage: server -mode {mode}")
-		os.Exit(1)
-	}
-
 	c.v.SetConfigName("config")
 	c.v.AddConfigPath("/etc/appname/")
 	c.v.AddConfigPath("$HOME/.appname")
@@ -94,10 +84,30 @@ func NewConfigViper(cmd *cobra.Command) (*ConfigViper, error) {
 
 	if err := c.v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			c.v.WriteConfigAs(c.executableFolder + "/config.yaml")
+			c.v.WriteConfigAs(c.executableFolder + "/config.yml")
 		} else {
 			return nil, err
 		}
 	}
+
+	c.v.SetDefault("mode", "prod")
+
+	if flags.Port != "" {
+		c.v.Set("server.port", flags.Port)
+	}
+	if flags.Address != "" {
+		c.v.Set("server.host", flags.Address)
+	}
+	if flags.Mode != "" {
+		c.v.Set("mode", flags.Mode)
+	}
+
+	mode := c.v.GetString("mode")
+	if mode == "prod" {
+		c.logger = NewLogger(logLevels.WARNING)
+	} else {
+		c.logger = NewLogger(logLevels.DEBUG)
+	}
+
 	return c, nil
 }

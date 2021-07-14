@@ -4,15 +4,21 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/martinv13/go-shiny/modules/config"
 	"gorm.io/gorm"
 )
 
 type MockConfig struct {
-	keys map[string]string
+	keys   map[string]string
+	logger config.Logger
 }
 
 func (c *MockConfig) ExecutableFolder() string {
 	return "."
+}
+
+func (c *MockConfig) Logger() *config.Logger {
+	return &c.logger
 }
 
 func (c *MockConfig) GetString(key string) string {
@@ -30,6 +36,7 @@ func setUp() (*gorm.DB, error) {
 			"database.type": "sqlite",
 			"database.path": "memory",
 		},
+		logger: config.NewLogger(0),
 	}
 
 	db, err := NewDB(conf)

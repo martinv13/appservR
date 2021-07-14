@@ -13,13 +13,12 @@ import (
 	"github.com/martinv13/go-shiny/modules/ssehandler"
 	"github.com/martinv13/go-shiny/modules/vfsdata"
 	"github.com/martinv13/go-shiny/server"
-	"github.com/spf13/cobra"
 )
 
 // Injectors from wire.go:
 
-func InitializeServer(cmd *cobra.Command) (*server.AppRouter, error) {
-	configViper, err := config.NewConfigViper(cmd)
+func InitializeServer(flags config.RunFlags) (*server.AppRouter, error) {
+	configViper, err := config.NewConfigViper(flags)
 	if err != nil {
 		return nil, err
 	}

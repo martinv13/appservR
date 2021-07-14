@@ -10,18 +10,19 @@ import (
 	"runtime/debug"
 
 	"github.com/kardianos/service"
+	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/spf13/cobra"
 )
 
 var (
-	host   string
-	port   string
-	mode   string
-	logger service.Logger
+	address string
+	port    string
+	mode    string
+	logger  service.Logger
 )
 
-func startApp(cmd *cobra.Command) {
-	server, err := InitializeServer(cmd)
+func startApp() {
+	server, err := InitializeServer(config.RunFlags{Address: address, Mode: mode, Port: port})
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +37,7 @@ func (p *program) Start(s service.Service) error {
 }
 
 func (p *program) run() {
-	startApp(nil)
+	startApp()
 }
 
 func (p *program) Stop(s service.Service) error {
@@ -71,24 +72,25 @@ func main() {
 		Short: "A server for R Shiny apps",
 		Long:  `Go-Shiny is a program to deploy R Shiny app on Windows and Linux`,
 		Run: func(cmd *cobra.Command, args []string) {
-			startApp(cmd)
+			fmt.Println("Use \"go-shiny help\" for more information about available commands")
+			s.Run()
 		},
 	}
-	cmdRoot.Flags().StringP("address", "a", "localhost", "server hostname or ip adress")
-	cmdRoot.Flags().StringP("port", "p", "8080", "server port")
-	cmdRoot.Flags().StringP("mode", "m", "prod", "prod or debug mode")
+	cmdRoot.Flags().StringVarP(&address, "address", "a", "", "server hostname or ip adress (default \"localhost\")")
+	cmdRoot.Flags().StringVarP(&port, "port", "p", "", "server port (default 8080)")
+	cmdRoot.Flags().StringVarP(&mode, "mode", "m", "", "prod or debug mode (default \"prod\")")
 
 	cmdServe := &cobra.Command{
 		Use:   "serve",
 		Short: "Start server",
 		Long:  `Start server`,
 		Run: func(cmd *cobra.Command, args []string) {
-			startApp(cmd)
+			startApp()
 		},
 	}
-	cmdServe.Flags().StringP("address", "a", "localhost", "server hostname or ip adress")
-	cmdServe.Flags().StringP("port", "p", "8080", "server port")
-	cmdServe.Flags().StringP("mode", "m", "prod", "prod or debug mode")
+	cmdServe.Flags().StringVarP(&address, "address", "a", "", "server hostname or ip adress (default \"localhost\")")
+	cmdServe.Flags().StringVarP(&port, "port", "p", "", "server port (default 8080)")
+	cmdServe.Flags().StringVarP(&mode, "mode", "m", "", "prod or debug mode (default \"prod\")")
 
 	cmdService := &cobra.Command{
 		Use:   "service",
@@ -101,7 +103,7 @@ func main() {
 		Short: "Install go-shiny as a service",
 		Long:  `Install go-shiny as a service`,
 		Run: func(cmd *cobra.Command, args []string) {
-			err = s.Install()
+			err := s.Install()
 			if err != nil {
 				fmt.Printf("Failed to install: %s\n", err)
 				return
@@ -115,7 +117,7 @@ func main() {
 		Short: "Remove go-shiny service",
 		Long:  `Remove go-shiny service if previously installed`,
 		Run: func(cmd *cobra.Command, args []string) {
-			err = s.Uninstall()
+			err := s.Uninstall()
 			if err != nil {
 				fmt.Printf("Failed to remove: %s\n", err)
 				return
@@ -129,7 +131,7 @@ func main() {
 		Short: "Start go-shiny service",
 		Long:  `Start go-shiny service if previously installed`,
 		Run: func(cmd *cobra.Command, args []string) {
-			err = s.Start()
+			err := s.Start()
 			if err != nil {
 				fmt.Printf("Failed to start: %s\n", err)
 				return
@@ -138,24 +140,12 @@ func main() {
 		},
 	}
 
-	var cmdRun = &cobra.Command{
-		Use:   "run",
-		Short: "Run go-shiny service",
-		Long:  `Run go-shiny service`,
-		Run: func(cmd *cobra.Command, args []string) {
-			err = s.Run()
-			if err != nil {
-				fmt.Printf("Failed to run: %s\n", err)
-			}
-		},
-	}
-
 	var cmdStop = &cobra.Command{
 		Use:   "stop",
 		Short: "Stop go-shiny service",
 		Long:  `Stop go-shiny service`,
 		Run: func(cmd *cobra.Command, args []string) {
-			err = s.Stop()
+			err := s.Stop()
 			if err != nil {
 				fmt.Printf("Failed to stop: %s\n", err)
 				return
@@ -165,6 +155,6 @@ func main() {
 	}
 
 	cmdRoot.AddCommand(cmdServe, cmdService)
-	cmdService.AddCommand(cmdRun, cmdInstall, cmdRemove, cmdStart, cmdStop)
+	cmdService.AddCommand(cmdInstall, cmdRemove, cmdStart, cmdStop)
 	cmdRoot.Execute()
 }

@@ -11,10 +11,9 @@ import (
 	"github.com/martinv13/go-shiny/modules/ssehandler"
 	"github.com/martinv13/go-shiny/modules/vfsdata"
 	"github.com/martinv13/go-shiny/server"
-	"github.com/spf13/cobra"
 )
 
-func InitializeServer(cmd *cobra.Command) (*server.AppRouter, error) {
+func InitializeServer(flags config.RunFlags) (*server.AppRouter, error) {
 	wire.Build(server.NewAppRouter, models.NewDB, vfsdata.NewStaticPaths,
 		ssehandler.NewMessageBroker, appserver.NewAppServer,
 		config.NewConfigViper, wire.Bind(new(config.Config), new(*config.ConfigViper)),

@@ -26,6 +26,11 @@ func NewAppRouter(config config.Config, staticPaths *vfsdata.StaticPaths,
 	appsCtl *controllers.AppController, usersCtl *controllers.UserController,
 	groupsCtl *controllers.GroupController, authCtl *controllers.AuthController) (*AppRouter, error) {
 
+	mode := config.GetString("mode")
+	if mode == "prod" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	router := gin.New()
 
 	t := template.New("")
@@ -35,8 +40,10 @@ func NewAppRouter(config config.Config, staticPaths *vfsdata.StaticPaths,
 	}
 	router.SetHTMLTemplate(t)
 
-	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	if mode != "prod" {
+		router.Use(gin.Logger())
+	}
 
 	router.StaticFS("/assets", staticPaths.Assets)
 
@@ -57,6 +64,7 @@ func NewAppRouter(config config.Config, staticPaths *vfsdata.StaticPaths,
 }
 
 func (s *AppRouter) Start() error {
+	s.config.Logger().Warning(fmt.Sprintf("Starting server on %s:%s", s.config.GetString("server.host"), s.config.GetString("server.port")))
 	return s.router.Run(fmt.Sprintf("%s:%s", s.config.GetString("server.host"), s.config.GetString("server.port")))
 }
 
