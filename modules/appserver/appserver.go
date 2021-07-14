@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/martinv13/go-shiny/models"
-	"github.com/martinv13/go-shiny/modules/config"
-	"github.com/martinv13/go-shiny/modules/ssehandler"
+	"github.com/appservR/appservR/models"
+	"github.com/appservR/appservR/modules/config"
+	"github.com/appservR/appservR/modules/ssehandler"
 )
 
 type AppServer struct {

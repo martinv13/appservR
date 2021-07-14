@@ -5,8 +5,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/martinv13/go-shiny/modules/vfsdata/assets"
-	"github.com/martinv13/go-shiny/modules/vfsdata/templates"
+	"github.com/appservR/appservR/modules/vfsdata/assets"
+	"github.com/appservR/appservR/modules/vfsdata/templates"
 	"github.com/shurcooL/vfsgen"
 )
 

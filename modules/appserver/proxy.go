@@ -69,12 +69,12 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		origin, _ := url.Parse("http://localhost:" + sess.Instance.Port())
 
 		if username, ok := c.Get("username"); ok {
-			c.Request.Header.Set("go-shiny-username", username.(string))
+			c.Request.Header.Set("appservR-username", username.(string))
 		}
 		if displayedname, ok := c.Get("displayedname"); ok {
-			c.Request.Header.Set("go-shiny-displayedname", displayedname.(string))
+			c.Request.Header.Set("appservR-displayedname", displayedname.(string))
 		}
-		c.Request.Header.Set("go-shiny-appname", app.ShinyApp.AppName)
+		c.Request.Header.Set("appservR-appname", app.ShinyApp.AppName)
 
 		c.Request.URL.Scheme = "http"
 		c.Request.URL.Host = origin.Host

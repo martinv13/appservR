@@ -3,9 +3,9 @@ package vfsdata
 import (
 	"net/http"
 
-	"github.com/martinv13/go-shiny/modules/config"
-	"github.com/martinv13/go-shiny/modules/vfsdata/assets"
-	"github.com/martinv13/go-shiny/modules/vfsdata/templates"
+	"github.com/appservR/appservR/modules/config"
+	"github.com/appservR/appservR/modules/vfsdata/assets"
+	"github.com/appservR/appservR/modules/vfsdata/templates"
 )
 
 type HybridFileSystem struct {

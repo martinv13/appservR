@@ -9,8 +9,8 @@ import (
 
 	"runtime/debug"
 
+	"github.com/appservR/appservR/modules/config"
 	"github.com/kardianos/service"
-	"github.com/martinv13/go-shiny/modules/config"
 	"github.com/spf13/cobra"
 )
 
@@ -52,8 +52,8 @@ func main() {
 	}()
 
 	svcConfig := &service.Config{
-		Name:        "go-shiny-server",
-		DisplayName: "Go-Shiny-Server",
+		Name:        "appservR",
+		DisplayName: "appservR",
 		Description: "Serving R Shiny apps",
 	}
 
@@ -68,11 +68,11 @@ func main() {
 	}
 
 	cmdRoot := &cobra.Command{
-		Use:   "go-shiny",
+		Use:   "appservR",
 		Short: "A server for R Shiny apps",
-		Long:  `Go-Shiny is a program to deploy R Shiny app on Windows and Linux`,
+		Long:  `AppservR is a program to deploy easily R Shiny app on Windows and Linux`,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Use \"go-shiny help\" for more information about available commands")
+			fmt.Println("Use \"appservR help\" for more information about available commands")
 			s.Run()
 		},
 	}
@@ -95,13 +95,13 @@ func main() {
 	cmdService := &cobra.Command{
 		Use:   "service",
 		Short: "Manage service (install, remove, start, stop, run)",
-		Long:  `Manage go-shiny service (install, remove, start, stop, run)`,
+		Long:  `Manage appservR service (install, remove, start, stop, run)`,
 	}
 
 	cmdInstall := &cobra.Command{
 		Use:   "install",
-		Short: "Install go-shiny as a service",
-		Long:  `Install go-shiny as a service`,
+		Short: "Install appservR as a service",
+		Long:  `Install appservR as a service`,
 		Run: func(cmd *cobra.Command, args []string) {
 			err := s.Install()
 			if err != nil {
@@ -114,8 +114,8 @@ func main() {
 
 	var cmdRemove = &cobra.Command{
 		Use:   "remove",
-		Short: "Remove go-shiny service",
-		Long:  `Remove go-shiny service if previously installed`,
+		Short: "Remove appservR service",
+		Long:  `Remove appservR service if previously installed`,
 		Run: func(cmd *cobra.Command, args []string) {
 			err := s.Uninstall()
 			if err != nil {
@@ -128,8 +128,8 @@ func main() {
 
 	var cmdStart = &cobra.Command{
 		Use:   "start",
-		Short: "Start go-shiny service",
-		Long:  `Start go-shiny service if previously installed`,
+		Short: "Start appservR service",
+		Long:  `Start appservR service if previously installed`,
 		Run: func(cmd *cobra.Command, args []string) {
 			err := s.Start()
 			if err != nil {
@@ -142,8 +142,8 @@ func main() {
 
 	var cmdStop = &cobra.Command{
 		Use:   "stop",
-		Short: "Stop go-shiny service",
-		Long:  `Stop go-shiny service`,
+		Short: "Stop appservR service",
+		Long:  `Stop appservR service`,
 		Run: func(cmd *cobra.Command, args []string) {
 			err := s.Stop()
 			if err != nil {

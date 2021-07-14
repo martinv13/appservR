@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/appservR/appservR/models"
 	"github.com/gin-gonic/gin"
-	"github.com/martinv13/go-shiny/models"
 )
 
 type GroupController struct {

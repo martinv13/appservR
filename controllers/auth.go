@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/appservR/appservR/models"
+	"github.com/appservR/appservR/modules/auth"
 	"github.com/gin-gonic/gin"
-	"github.com/martinv13/go-shiny/models"
-	"github.com/martinv13/go-shiny/modules/auth"
 )
 
 func GetLoggedName(c *gin.Context) string {

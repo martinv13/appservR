@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/martinv13/go-shiny/models"
-	"github.com/martinv13/go-shiny/modules/config"
+	"github.com/appservR/appservR/models"
+	"github.com/appservR/appservR/modules/config"
 )
 
 type AppSource interface {

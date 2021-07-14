@@ -3,9 +3,9 @@ package server
 import (
 	"net/http"
 
+	"github.com/appservR/appservR/controllers"
+	"github.com/appservR/appservR/modules/ssehandler"
 	"github.com/gin-gonic/gin"
-	"github.com/martinv13/go-shiny/controllers"
-	"github.com/martinv13/go-shiny/modules/ssehandler"
 )
 
 func addAdminRoutes(admin *gin.RouterGroup,

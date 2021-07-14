@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/martinv13/go-shiny/modules/config"
+	"github.com/appservR/appservR/modules/config"
 	"gorm.io/gorm"
 )
 

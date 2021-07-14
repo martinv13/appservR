@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/appservR/appservR/models"
+	"github.com/appservR/appservR/modules/appserver"
 	"github.com/gin-gonic/gin"
-	"github.com/martinv13/go-shiny/models"
-	"github.com/martinv13/go-shiny/modules/appserver"
 )
 
 type AppController struct {

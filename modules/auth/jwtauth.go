@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appservR/appservR/models"
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/martinv13/go-shiny/models"
 )
 
 func getSecretKey() string {

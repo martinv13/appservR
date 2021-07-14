@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/appservR/appservR/controllers"
 	"github.com/gin-gonic/gin"
-	"github.com/martinv13/go-shiny/controllers"
 )
 
 func addAuthRoutes(auth *gin.RouterGroup, authCtl *controllers.AuthController) *gin.RouterGroup {

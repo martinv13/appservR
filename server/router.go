@@ -6,13 +6,13 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/appservR/appservR/controllers"
+	"github.com/appservR/appservR/middlewares"
+	"github.com/appservR/appservR/modules/appserver"
+	"github.com/appservR/appservR/modules/config"
+	"github.com/appservR/appservR/modules/ssehandler"
+	"github.com/appservR/appservR/modules/vfsdata"
 	"github.com/gin-gonic/gin"
-	"github.com/martinv13/go-shiny/controllers"
-	"github.com/martinv13/go-shiny/middlewares"
-	"github.com/martinv13/go-shiny/modules/appserver"
-	"github.com/martinv13/go-shiny/modules/config"
-	"github.com/martinv13/go-shiny/modules/ssehandler"
-	"github.com/martinv13/go-shiny/modules/vfsdata"
 )
 
 type AppRouter struct {

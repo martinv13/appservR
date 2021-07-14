@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/martinv13/go-shiny/modules/config"
-	"github.com/martinv13/go-shiny/modules/portspool"
+	"github.com/appservR/appservR/modules/config"
+	"github.com/appservR/appservR/modules/portspool"
 	uuid "github.com/satori/go.uuid"
 )
 

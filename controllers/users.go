@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/martinv13/go-shiny/models"
+	"github.com/appservR/appservR/models"
 )
 
 type UserController struct {
