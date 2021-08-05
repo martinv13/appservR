@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/appservR/appservR/models"
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 )
 
 func getSecretKey() string {
@@ -36,7 +36,7 @@ func GenerateToken(user models.User) string {
 		strings.Join(groups, ","),
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
-			Issuer:    "Go-Shiny",
+			Issuer:    "AppservR",
 			IssuedAt:  time.Now().Unix(),
 		},
 	}

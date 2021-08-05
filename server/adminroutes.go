@@ -16,10 +16,10 @@ func addAdminRoutes(admin *gin.RouterGroup,
 		c.Redirect(http.StatusMovedPermanently, "/admin/apps")
 	})
 
-	admin.GET("/apps", appsCtl.GetShinyApps())
-	admin.GET("/apps/:appname", appsCtl.GetShinyApp())
-	admin.POST("/apps/:appname", appsCtl.UpdateShinyApp())
-	admin.GET("/apps/:appname/delete", appsCtl.DeleteShinyApp())
+	admin.GET("/apps", appsCtl.GetRApps())
+	admin.GET("/apps/:appname", appsCtl.GetRApp())
+	admin.POST("/apps/:appname", appsCtl.UpdateRApp())
+	admin.GET("/apps/:appname/delete", appsCtl.DeleteRApp())
 
 	admin.GET("/apps.json", msgBroker.Controller())
 

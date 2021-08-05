@@ -4,4 +4,4 @@ tmp
 *.db
 apps
 config.yml
-dist/ 
+dist/

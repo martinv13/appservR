@@ -2,6 +2,7 @@ package appserver
 
 import (
 	"errors"
+	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -44,7 +45,7 @@ func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker,
 }
 
 // Apply app settings changes
-func (s *AppServer) Update(appName string, app models.ShinyApp) error {
+func (s *AppServer) Update(appName string, app models.RApp) error {
 	s.Lock()
 	defer s.Unlock()
 	appProxy, ok := s.appsByName[appName]
@@ -59,7 +60,7 @@ func (s *AppServer) Update(appName string, app models.ShinyApp) error {
 		sort.SliceStable(s.byPath, s.prefixSort)
 	} else {
 		// updated app
-		prevApp := appProxy.ShinyApp
+		prevApp := appProxy.RApp
 		appProxy.Update(app)
 		if app.AppName != prevApp.AppName {
 			delete(s.appsByName, prevApp.AppName)
@@ -68,6 +69,10 @@ func (s *AppServer) Update(appName string, app models.ShinyApp) error {
 		if app.Path != prevApp.Path {
 			sort.SliceStable(s.byPath, s.prefixSort)
 		}
+	}
+	log.Println("updated path")
+	for i := range s.byPath {
+		log.Println(s.byPath[i].RApp.Path)
 	}
 	return nil
 }
@@ -108,13 +113,13 @@ func (s *AppServer) GetStatus(appName string) (map[string]interface{}, error) {
 }
 
 func (s *AppServer) prefixSort(i, j int) bool {
-	return !strings.HasPrefix(s.byPath[i].ShinyApp.Path,
-		s.byPath[j].ShinyApp.Path)
+	return !strings.HasPrefix(s.byPath[i].RApp.Path,
+		s.byPath[j].RApp.Path)
 }
 
 func findAppProxy(p []*AppProxy, appName string) int {
 	for i, a := range p {
-		if a.ShinyApp.AppName == appName {
+		if a.RApp.AppName == appName {
 			return i
 		}
 	}

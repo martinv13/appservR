@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/appservR/appservR/modules/auth"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 )
 
 func Auth() gin.HandlerFunc {
