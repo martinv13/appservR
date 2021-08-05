@@ -21,7 +21,7 @@ type AppSourceDir struct {
 	err    error
 }
 
-func NewAppSource(app models.ShinyApp, conf config.Config) AppSource {
+func NewAppSource(app models.RApp, conf config.Config) AppSource {
 	if app.AppSource == "sample-app" {
 		return NewAppSourceSampleApp(app, conf)
 	} else {
@@ -29,7 +29,7 @@ func NewAppSource(app models.ShinyApp, conf config.Config) AppSource {
 	}
 }
 
-func NewAppSourceDir(app models.ShinyApp, conf config.Config) *AppSourceDir {
+func NewAppSourceDir(app models.RApp, conf config.Config) *AppSourceDir {
 	path := app.AppDir
 	if !filepath.IsAbs(path) {
 		path = filepath.Join(conf.ExecutableFolder(), path)
@@ -41,8 +41,8 @@ func NewAppSourceDir(app models.ShinyApp, conf config.Config) *AppSourceDir {
 	return &AppSourceDir{AppDir: path}
 }
 
-func NewAppSourceSampleApp(app models.ShinyApp, conf config.Config) *AppSourceDir {
-	path := conf.ExecutableFolder() + "/shinyapps"
+func NewAppSourceSampleApp(app models.RApp, conf config.Config) *AppSourceDir {
+	path := conf.ExecutableFolder() + "/apps"
 	_, err := os.Stat(path)
 	if err != nil {
 		err = os.Mkdir(path, 0700)
@@ -77,17 +77,17 @@ func NewAppSourceSampleApp(app models.ShinyApp, conf config.Config) *AppSourceDi
 	return &AppSourceDir{AppDir: path}
 }
 
-// Get shiny app directory path
+// Get R app directory path
 func (s *AppSourceDir) Path() string {
 	return s.AppDir
 }
 
-// Get shiny app source status
+// Get R app source status
 func (s *AppSourceDir) Error() error {
 	return s.err
 }
 
-// Remove shiny app directory
+// Remove R app directory
 func (s *AppSourceDir) Cleanup() error {
 	err := os.RemoveAll(s.AppDir)
 	if err != nil {

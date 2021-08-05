@@ -54,7 +54,7 @@ func main() {
 	svcConfig := &service.Config{
 		Name:        "appservR",
 		DisplayName: "appservR",
-		Description: "Serving R Shiny apps",
+		Description: "Serving R web apps",
 	}
 
 	prg := &program{}
@@ -69,8 +69,8 @@ func main() {
 
 	cmdRoot := &cobra.Command{
 		Use:   "appservR",
-		Short: "A server for R Shiny apps",
-		Long:  `AppservR is a program to deploy easily R Shiny app on Windows and Linux`,
+		Short: "A server for R web apps",
+		Long:  `AppservR is a program to deploy easily R web app on Windows and Linux`,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("Use \"appservR help\" for more information about available commands")
 			s.Run()

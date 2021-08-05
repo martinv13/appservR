@@ -16,7 +16,7 @@ import (
 
 type AppProxy struct {
 	sync.RWMutex
-	ShinyApp        models.ShinyApp
+	RApp            models.RApp
 	AppSource       appsource.AppSource
 	StatusStream    *ssehandler.MessageBroker
 	Instances       map[string]*Instance
@@ -26,9 +26,9 @@ type AppProxy struct {
 }
 
 // Create a new app proxy
-func NewAppProxy(app models.ShinyApp, msgBroker *ssehandler.MessageBroker, config config.Config) (*AppProxy, error) {
+func NewAppProxy(app models.RApp, msgBroker *ssehandler.MessageBroker, config config.Config) (*AppProxy, error) {
 	p := &AppProxy{
-		ShinyApp:        app,
+		RApp:            app,
 		AppSource:       appsource.NewAppSource(app, config),
 		StatusStream:    msgBroker,
 		Instances:       map[string]*Instance{},
@@ -133,13 +133,13 @@ func (p *AppProxy) Rescale() {
 			nbInst++
 		}
 	}
-	targetWorkers := p.ShinyApp.Workers
-	if !p.ShinyApp.Active {
+	targetWorkers := p.RApp.Workers
+	if !p.RApp.Active {
 		targetWorkers = 0
 	}
 	// if too few instances, start new ones
 	for w := 0; w < targetWorkers-nbInst; w++ {
-		inst := NewInstance(p.ShinyApp.AppName, p.AppSource.Path(), p.config)
+		inst := NewInstance(p.RApp.AppName, p.AppSource.Path(), p.config)
 		inst.Start()
 		p.Instances[inst.ID] = inst
 	}
@@ -190,11 +190,11 @@ func (p *AppProxy) phaseOut() {
 }
 
 // Apply changes to app settings
-func (p *AppProxy) Update(app models.ShinyApp) {
+func (p *AppProxy) Update(app models.RApp) {
 	p.Lock()
 	defer p.Unlock()
-	prevApp := p.ShinyApp
-	p.ShinyApp = app
+	prevApp := p.RApp
+	p.RApp = app
 	if prevApp.AppDir != app.AppDir || prevApp.Active != app.Active {
 		p.phaseOut()
 	} else if prevApp.Workers != app.Workers {
@@ -252,7 +252,7 @@ func (p *AppProxy) ReportStatus() {
 		msg = fmt.Sprintf("%d connected users", users)
 	}
 	msgData, _ := json.Marshal(map[string]string{
-		"appName": p.ShinyApp.AppName,
+		"appName": p.RApp.AppName,
 		"value":   msg,
 	})
 	p.StatusStream.Message <- string(msgData)

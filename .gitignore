@@ -2,5 +2,6 @@ appservR
 appservR.exe
 tmp
 *.db
-shinyapps
-config.yamldist/
+apps
+config.yml
+dist/

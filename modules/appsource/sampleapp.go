@@ -53,10 +53,10 @@ server <- function(input, output, session) {
     })
 
     output$greetings <- renderUI({
-        if (exists("HTTP_GO_SHINY_DISPLAYEDNAME", envir = session$request)) {
+        if (exists("HTTP_APPSERVR_DISPLAYEDNAME", envir = session$request)) {
             tagList(
                 tags$h3(paste0("Welcome, ", 
-                           get("HTTP_GO_SHINY_DISPLAYEDNAME", envir=session$request),
+                           get("HTTP_APPSERVR_DISPLAYEDNAME", envir=session$request),
                            "!"), style="margin-top:0;"),
                 tags$a("Logout", href="/auth/logout", class="btn btn-primary")
             )

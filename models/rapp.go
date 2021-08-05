@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type ShinyApp struct {
+type RApp struct {
 	gorm.Model
 	AppName         string `gorm:"unique"`
 	Path            string
@@ -23,12 +23,12 @@ type ShinyApp struct {
 }
 
 type AppModel interface {
-	All() ([]ShinyApp, error)
-	Find(appName string) (ShinyApp, error)
-	Save(app ShinyApp, oldAppName string) error
+	All() ([]RApp, error)
+	Find(appName string) (RApp, error)
+	Save(app RApp, oldAppName string) error
 	Delete(appName string) error
-	AsMap(app ShinyApp) (map[string]interface{}, error)
-	AsMapSlice(apps []ShinyApp) ([]map[string]interface{}, error)
+	AsMap(app RApp) (map[string]interface{}, error)
+	AsMapSlice(apps []RApp) ([]map[string]interface{}, error)
 }
 
 type AppModelDB struct {
@@ -43,14 +43,14 @@ func NewAppModelDB(db *gorm.DB, groupModel *GroupModelDB) (*AppModelDB, error) {
 		groupModel: groupModel,
 	}
 
-	app := ShinyApp{}
+	app := RApp{}
 
 	err := db.First(&app).Error
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, err
 		} else {
-			defaultApp := ShinyApp{
+			defaultApp := RApp{
 				AppName:        "sample-app",
 				Path:           "/",
 				AppSource:      "sample-app",
@@ -68,31 +68,31 @@ func NewAppModelDB(db *gorm.DB, groupModel *GroupModelDB) (*AppModelDB, error) {
 }
 
 // Get all apps
-func (m *AppModelDB) All() ([]ShinyApp, error) {
-	var apps []ShinyApp
+func (m *AppModelDB) All() ([]RApp, error) {
+	var apps []RApp
 	err := m.DB.Find(&apps).Error
 	if err != nil {
-		return []ShinyApp{}, errors.New("Unable to retrieve apps")
+		return []RApp{}, errors.New("Unable to retrieve apps")
 	}
 	return apps, nil
 }
 
 // Find a specific app by app name
-func (m *AppModelDB) Find(appName string) (ShinyApp, error) {
-	var app ShinyApp
+func (m *AppModelDB) Find(appName string) (RApp, error) {
+	var app RApp
 	err := m.DB.First(&app, "app_name = ?", appName).Error
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return ShinyApp{}, errors.New("Unable to retrieve app from db")
+			return RApp{}, errors.New("Unable to retrieve app from db")
 		} else {
-			return ShinyApp{}, fmt.Errorf("App %s does not exist.", appName)
+			return RApp{}, fmt.Errorf("App %s does not exist.", appName)
 		}
 	}
 	return app, nil
 }
 
-// Create or update a shinyapp to the database
-func (m *AppModelDB) Save(app ShinyApp, oldAppName string) error {
+// Create or update a R app to the database
+func (m *AppModelDB) Save(app RApp, oldAppName string) error {
 
 	if app.RestrictAccess {
 		allGroups, err := m.groupModel.AllNames()
@@ -122,7 +122,7 @@ func (m *AppModelDB) Save(app ShinyApp, oldAppName string) error {
 		return nil
 	}
 
-	var currentApp ShinyApp
+	var currentApp RApp
 
 	err := m.DB.First(&currentApp, "app_name=?", oldAppName).Error
 	if err != nil {
@@ -158,7 +158,7 @@ func (m *AppModelDB) Save(app ShinyApp, oldAppName string) error {
 
 // Delete an app
 func (m *AppModelDB) Delete(appName string) error {
-	var app ShinyApp
+	var app RApp
 	err := m.DB.Unscoped().Where("app_name = ?", appName).Delete(&app).Error
 	if err != nil {
 		return fmt.Errorf("Error while deleting app: %s", appName)
@@ -179,7 +179,7 @@ func (m *AppModelDB) groupsMap(allowedGroups []Group, allGroups []string) map[st
 }
 
 // Get an app as a map, directly usable in template
-func (m *AppModelDB) AsMap(app ShinyApp) (map[string]interface{}, error) {
+func (m *AppModelDB) AsMap(app RApp) (map[string]interface{}, error) {
 	allGroups, err := m.groupModel.AllNames()
 	if err != nil {
 		return nil, errors.New("Unable to retrieve groups")
@@ -199,7 +199,7 @@ func (m *AppModelDB) AsMap(app ShinyApp) (map[string]interface{}, error) {
 }
 
 // Get a slice of apps as a slice of maps, directly usable in template
-func (m *AppModelDB) AsMapSlice(apps []ShinyApp) ([]map[string]interface{}, error) {
+func (m *AppModelDB) AsMapSlice(apps []RApp) ([]map[string]interface{}, error) {
 	allGroups, err := m.groupModel.AllNames()
 	if err != nil {
 		return nil, errors.New("Unable to retrieve groups")

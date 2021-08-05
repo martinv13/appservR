@@ -6,6 +6,7 @@ import (
 	"github.com/appservR/appservR/modules/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func NewDB(conf config.Config) (*gorm.DB, error) {
@@ -20,7 +21,12 @@ func NewDB(conf config.Config) (*gorm.DB, error) {
 		if dbPath == "memory" {
 			dbPath = "file::memory:?cache=shared"
 		}
-		db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+		mode := conf.GetString("mode")
+		gormConf := &gorm.Config{}
+		if mode == "prod" {
+			gormConf.Logger = logger.Default.LogMode(logger.Silent)
+		}
+		db, err = gorm.Open(sqlite.Open(dbPath), gormConf)
 		if err != nil {
 			return nil, errors.New("failed to connect to the database")
 		}
@@ -28,7 +34,7 @@ func NewDB(conf config.Config) (*gorm.DB, error) {
 
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Group{})
-	db.AutoMigrate(&ShinyApp{})
+	db.AutoMigrate(&RApp{})
 
 	return db, nil
 }

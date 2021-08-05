@@ -18,7 +18,7 @@ func (appServer *AppServer) GetApp(c *gin.Context) (*AppProxy, bool, error) {
 	reqURI, _ := url.Parse(r.RequestURI)
 	reqPath := strings.TrimSuffix(reqURI.Path, "/")
 	for _, app := range appServer.byPath {
-		appPath := strings.TrimSuffix(app.ShinyApp.Path, "/")
+		appPath := strings.TrimSuffix(app.RApp.Path, "/")
 		if appPath == reqPath {
 			if reqURI.Path != reqPath+"/" {
 				c.Redirect(http.StatusMovedPermanently, reqPath+"/")
@@ -28,7 +28,7 @@ func (appServer *AppServer) GetApp(c *gin.Context) (*AppProxy, bool, error) {
 			return app, true, nil
 		}
 	}
-	appCookie, err := r.Cookie("go_shiny_appid")
+	appCookie, err := r.Cookie("appservr_appid")
 	if err == nil {
 		if app, ok := appServer.appsByName[appCookie.Value]; ok {
 			return app, false, nil
@@ -56,7 +56,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		if root {
 			sess, err = app.GetSession("")
 		} else {
-			sessCookie, err := c.Request.Cookie("go_shiny_session")
+			sessCookie, err := c.Request.Cookie("appservr_session")
 			if err == nil {
 				sess, err = app.GetSession(sessCookie.Value)
 			}
@@ -74,21 +74,21 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		if displayedname, ok := c.Get("displayedname"); ok {
 			c.Request.Header.Set("appservR-displayedname", displayedname.(string))
 		}
-		c.Request.Header.Set("appservR-appname", app.ShinyApp.AppName)
+		c.Request.Header.Set("appservR-appname", app.RApp.AppName)
 
 		c.Request.URL.Scheme = "http"
 		c.Request.URL.Host = origin.Host
-		if app.ShinyApp.Path != "/" {
-			c.Request.URL.Path = strings.Replace(c.Request.URL.Path, app.ShinyApp.Path, "", -1)
+		if app.RApp.Path != "/" {
+			c.Request.URL.Path = strings.Replace(c.Request.URL.Path, app.RApp.Path, "", -1)
 		}
 		cookieApp := http.Cookie{
-			Name:  "go_shiny_appid",
-			Value: app.ShinyApp.AppName,
+			Name:  "appservr_appid",
+			Value: app.RApp.AppName,
 			Path:  "/",
 		}
 		http.SetCookie(c.Writer, &cookieApp)
 		cookieSess := http.Cookie{
-			Name:  "go_shiny_session",
+			Name:  "appservr_session",
 			Value: sess.ID,
 			Path:  "/",
 		}

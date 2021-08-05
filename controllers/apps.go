@@ -23,19 +23,20 @@ func NewAppController(appModel models.AppModel, appServer *appserver.AppServer) 
 	}
 }
 
-// Get all app infos
-func (ctl *AppController) GetShinyApps() gin.HandlerFunc {
+// Render apps page
+func (ctl *AppController) GetRApps() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.HTML(http.StatusOK, "apps.html", ctl.buildAppsTemplateData(c))
 	}
 }
 
-func (ctl *AppController) GetShinyApp() gin.HandlerFunc {
+// Render an app details page
+func (ctl *AppController) GetRApp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		appName := c.Param("appname")
 
-		var app models.ShinyApp
+		var app models.RApp
 		var err error
 		var data gin.H
 
@@ -47,7 +48,7 @@ func (ctl *AppController) GetShinyApp() gin.HandlerFunc {
 		}
 
 		if appName == "new" || err != nil {
-			data, err = ctl.buildAppTemplateData(models.ShinyApp{}, c)
+			data, err = ctl.buildAppTemplateData(models.RApp{}, c)
 			data["Title"] = "New App"
 			c.HTML(http.StatusOK, "app.html", data)
 			return
@@ -56,7 +57,7 @@ func (ctl *AppController) GetShinyApp() gin.HandlerFunc {
 	}
 }
 
-type ShinyAppSettings struct {
+type RAppSettings struct {
 	AppName       string   `form:"appname" binding:"required"`
 	Path          string   `form:"path" binding:"required"`
 	Properties    []string `form:"properties[]"`
@@ -65,11 +66,11 @@ type ShinyAppSettings struct {
 	Workers       int      `form:"workers"`
 }
 
-// Update or create app
-func (ctl *AppController) UpdateShinyApp() gin.HandlerFunc {
+// Update or create an app
+func (ctl *AppController) UpdateRApp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		var appInfo ShinyAppSettings
+		var appInfo RAppSettings
 		var res map[string]interface{}
 		appname := c.Param("appname")
 		err := c.ShouldBind(&appInfo)
@@ -84,7 +85,7 @@ func (ctl *AppController) UpdateShinyApp() gin.HandlerFunc {
 					isRestricted = true
 				}
 			}
-			app := models.ShinyApp{
+			app := models.RApp{
 				AppName:        appInfo.AppName,
 				Path:           appInfo.Path,
 				AppDir:         appInfo.AppDir,
@@ -117,13 +118,13 @@ func (ctl *AppController) UpdateShinyApp() gin.HandlerFunc {
 	}
 }
 
-// Controller function to delete a Shiny app
-func (ctl *AppController) DeleteShinyApp() gin.HandlerFunc {
+// Controller function to delete a R app
+func (ctl *AppController) DeleteRApp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		appName := c.Param("appname")
 		err := ctl.appModel.Delete(appName)
 		res := ctl.buildAppsTemplateData(c)
-		ctl.appServer.Update(appName, models.ShinyApp{})
+		ctl.appServer.Update(appName, models.RApp{})
 		if err != nil {
 			res["errorMessage"] = fmt.Sprintf("An error occured while deleting app %s.", appName)
 			c.HTML(http.StatusOK, "apps.html", res)
@@ -136,7 +137,7 @@ func (ctl *AppController) DeleteShinyApp() gin.HandlerFunc {
 }
 
 // Build map for use in template
-func (ctl *AppController) buildAppTemplateData(app models.ShinyApp, c *gin.Context) (gin.H, error) {
+func (ctl *AppController) buildAppTemplateData(app models.RApp, c *gin.Context) (gin.H, error) {
 	appMap, err := ctl.appModel.AsMap(app)
 	if err != nil {
 		return nil, err

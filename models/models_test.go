@@ -120,10 +120,10 @@ func TestDataModelDB(t *testing.T) {
 		}
 	})
 	t.Run("app=create", func(t *testing.T) {
-		app := ShinyApp{
+		app := RApp{
 			AppName: "test-app",
 			Path:    "/test-app",
-			AppDir:  "shinyapps/sample-app/",
+			AppDir:  "apps/sample-app/",
 			Workers: 1,
 		}
 		err := appModel.Save(app, "new")
