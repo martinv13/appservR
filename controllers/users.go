@@ -19,12 +19,6 @@ func NewUserController(userModel models.UserModel) *UserController {
 	}
 }
 
-type userData struct {
-	Username      string
-	DisplayedName string
-	Groups        map[string]bool
-}
-
 // Get all users
 func (userCtl *UserController) GetUsers() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -84,7 +78,7 @@ func (userCtl *UserController) AdminUpdateUser() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		groups := make([]models.Group, len(info.Groups), len(info.Groups))
+		groups := make([]models.Group, len(info.Groups))
 		isAdmin := false
 		for i := range info.Groups {
 			groups[i] = models.Group{Name: info.Groups[i]}

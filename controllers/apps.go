@@ -8,35 +8,38 @@ import (
 
 	"github.com/appservR/appservR/models"
 	"github.com/appservR/appservR/modules/appserver"
+	"github.com/appservR/appservR/modules/config"
 	"github.com/gin-gonic/gin"
 )
 
 type AppController struct {
 	appModel  models.AppModel
 	appServer *appserver.AppServer
+	config    config.Config
 }
 
-func NewAppController(appModel models.AppModel, appServer *appserver.AppServer) *AppController {
+func NewAppController(appModel models.AppModel, appServer *appserver.AppServer, config config.Config) *AppController {
 	return &AppController{
 		appModel:  appModel,
 		appServer: appServer,
+		config:    config,
 	}
 }
 
 // Render apps page
-func (ctl *AppController) GetRApps() gin.HandlerFunc {
+func (ctl *AppController) GetApps() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.HTML(http.StatusOK, "apps.html", ctl.buildAppsTemplateData(c))
 	}
 }
 
 // Render an app details page
-func (ctl *AppController) GetRApp() gin.HandlerFunc {
+func (ctl *AppController) GetApp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		appName := c.Param("appname")
 
-		var app models.RApp
+		var app models.App
 		var err error
 		var data gin.H
 
@@ -48,7 +51,7 @@ func (ctl *AppController) GetRApp() gin.HandlerFunc {
 		}
 
 		if appName == "new" || err != nil {
-			data, err = ctl.buildAppTemplateData(models.RApp{}, c)
+			data, err = ctl.buildAppTemplateData(models.App{}, c)
 			data["Title"] = "New App"
 			c.HTML(http.StatusOK, "app.html", data)
 			return
@@ -57,41 +60,43 @@ func (ctl *AppController) GetRApp() gin.HandlerFunc {
 	}
 }
 
-type RAppSettings struct {
-	AppName       string   `form:"appname" binding:"required"`
-	Path          string   `form:"path" binding:"required"`
-	Properties    []string `form:"properties[]"`
-	AllowedGroups []string `form:"allowedgroups"`
-	AppDir        string   `form:"appdir"`
-	Workers       int      `form:"workers"`
+type AppSettings struct {
+	Name           string   `form:"appname" binding:"required"`
+	Path           string   `form:"path" binding:"required"`
+	Properties     []string `form:"properties[]"`
+	RestrictAccess int      `form:"restrictaccess"`
+	AllowedGroups  []string `form:"allowedgroups"`
+	AppDir         string   `form:"appdir"`
+	Workers        int      `form:"workers"`
 }
 
 // Update or create an app
-func (ctl *AppController) UpdateRApp() gin.HandlerFunc {
+func (ctl *AppController) UpdateApp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		var appInfo RAppSettings
+		var appInfo AppSettings
 		var res map[string]interface{}
 		appname := c.Param("appname")
 		err := c.ShouldBind(&appInfo)
 		if err == nil && appname != "" {
 			isActive := false
-			isRestricted := false
 			for _, val := range appInfo.Properties {
 				if val == "active" {
 					isActive = true
 				}
-				if val == "restrictaccess" {
-					isRestricted = true
-				}
 			}
-			app := models.RApp{
-				AppName:        appInfo.AppName,
+			groups := make([]models.Group, len(appInfo.AllowedGroups))
+			for i := range appInfo.AllowedGroups {
+				groups[i] = models.Group{Name: appInfo.AllowedGroups[i]}
+			}
+			app := models.App{
+				Name:           appInfo.Name,
 				Path:           appInfo.Path,
 				AppDir:         appInfo.AppDir,
 				Workers:        appInfo.Workers,
-				Active:         isActive,
-				RestrictAccess: isRestricted,
+				IsActive:       isActive,
+				RestrictAccess: appInfo.RestrictAccess,
+				AllowedGroups:  groups,
 			}
 			err = ctl.appModel.Save(app, appname)
 			if err == nil {
@@ -112,6 +117,8 @@ func (ctl *AppController) UpdateRApp() gin.HandlerFunc {
 		res["selTab"] = "apps"
 		res["loggedUserName"] = GetLoggedName(c)
 		res["errorMessage"] = "App update failed. Please check the info provided."
+		logger := ctl.config.Logger()
+		logger.Info(err.Error())
 		c.HTML(http.StatusBadRequest, "app.html", res)
 		c.Abort()
 		return
@@ -119,12 +126,12 @@ func (ctl *AppController) UpdateRApp() gin.HandlerFunc {
 }
 
 // Controller function to delete a R app
-func (ctl *AppController) DeleteRApp() gin.HandlerFunc {
+func (ctl *AppController) DeleteApp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		appName := c.Param("appname")
 		err := ctl.appModel.Delete(appName)
 		res := ctl.buildAppsTemplateData(c)
-		ctl.appServer.Update(appName, models.RApp{})
+		ctl.appServer.Update(appName, models.App{})
 		if err != nil {
 			res["errorMessage"] = fmt.Sprintf("An error occured while deleting app %s.", appName)
 			c.HTML(http.StatusOK, "apps.html", res)
@@ -137,7 +144,7 @@ func (ctl *AppController) DeleteRApp() gin.HandlerFunc {
 }
 
 // Build map for use in template
-func (ctl *AppController) buildAppTemplateData(app models.RApp, c *gin.Context) (gin.H, error) {
+func (ctl *AppController) buildAppTemplateData(app models.App, c *gin.Context) (gin.H, error) {
 	appMap, err := ctl.appModel.AsMap(app)
 	if err != nil {
 		return nil, err
@@ -145,11 +152,11 @@ func (ctl *AppController) buildAppTemplateData(app models.RApp, c *gin.Context) 
 	data := gin.H{
 		"loggedUserName": GetLoggedName(c),
 		"selTab":         "apps",
-		"Title":          strings.Title(app.AppName),
+		"Title":          strings.Title(app.Name),
 		"AppSettings":    appMap,
 	}
-	if app.AppName != "" {
-		status, err := ctl.appServer.GetStatus(app.AppName)
+	if app.Name != "" {
+		status, err := ctl.appServer.GetStatus(app.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -164,11 +171,11 @@ func (ctl *AppController) buildAppsTemplateData(c *gin.Context) gin.H {
 	status := ctl.appServer.GetAllStatus()
 	res := make(map[string]interface{})
 	for _, a := range apps {
-		res[a.AppName] = map[string]interface{}{
-			"AppName": a.AppName,
-			"Path":    a.Path,
-			"Title":   strings.Title(a.AppName),
-			"Status":  status[a.AppName],
+		res[a.Name] = map[string]interface{}{
+			"Name":   a.Name,
+			"Path":   a.Path,
+			"Title":  strings.Title(a.Name),
+			"Status": status[a.Name],
 		}
 	}
 	return gin.H{

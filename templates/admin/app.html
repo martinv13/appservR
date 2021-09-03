@@ -15,7 +15,7 @@
                 <hr>
                 <div class="form-group">
                     <label for="appname">Name of the app</label>
-                    <input type="text" class="form-control" id="appname" name="appname" value="{{.AppSettings.AppName}}" 
+                    <input type="text" class="form-control" id="appname" name="appname" value="{{.AppSettings.Name}}" 
                     required pattern="[0-9a-zA-Z-_]+">
                     <small class="form-text text-muted">
                         Should contain only letters, numbers, hyphens or underscores.  
@@ -31,20 +31,21 @@
                 </div>
                 <div class="form-group">
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="active" name="properties[]" value="active"{{if .AppSettings.Active}} checked{{end}}>
+                        <input type="checkbox" class="form-check-input" id="active" name="properties[]" value="active"{{if .AppSettings.IsActive}} checked{{end}}>
                         <label class="form-check-label" for="active">Is active</label>
                     </div>
                 </div>
                 <div class="form-group">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="restrict-access" name="properties[]" 
-                        value="restrictaccess" onclick="toggleGroups()"{{if .AppSettings.RestrictAccess}} checked{{end}}>
-                        <label class="form-check-label" for="restrictaccess">Restrict access to specific groups</label>
-                    </div>
+                    <label for="restrict-access">Grant access to</label>
+                    <select class="form-control" id="restrict-access" name="restrictaccess" onchange="toggleGroups()">
+                        <option value="0"{{if eq .AppSettings.RestrictAccess 0 }} selected{{end}}>Everyone</option>
+                        <option value="1"{{if eq .AppSettings.RestrictAccess 1 }} selected{{end}}>All authenticated users</option>
+                        <option value="2"{{if eq .AppSettings.RestrictAccess 2 }} selected{{end}}>Specific user groups</option>
+                    </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="allowed-groups" {{if eq .AppSettings.RestrictAccess 2}}{{else}} style="display:none;"{{end}}>
                     <label for="groups">Allowed groups</label>
-                    <select class="form-control" id="allowed-groups" name="AllowedGroups" multiple{{if .AppSettings.RestrictAccess}}{{else}} disabled{{end}}>
+                    <select class="form-control" name="allowedgroups" multiple>
                     {{range $group, $belongs := .AppSettings.AllowedGroups}}
                         <option value="{{$group}}" {{if $belongs}}selected{{end}}>{{$group}}</option>
                     {{end}}
@@ -82,7 +83,7 @@
             </div>
         </div>
     </form>
-    {{if .AppSettings.AppName}}
+    {{if .AppSettings.Name}}
     <br>
     <div class="card">
         <div class="card-header">Console output</div>
@@ -129,17 +130,17 @@
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <a type="button" class="btn btn-danger" href="/admin/apps/{{.AppSettings.AppName}}/delete">Delete</a>
+            <a type="button" class="btn btn-danger" href="/admin/apps/{{.AppSettings.Name}}/delete">Delete</a>
         </div>
     </div>
   </div>
 </div>
 <script>
   function toggleGroups() {
-    if ($('#restrict-access')[0].checked) {
-      $('#allowed-groups')[0].selectize.enable();
+    if ($('#restrict-access')[0].value == "2") {
+      $('#allowed-groups').show();
     } else {
-      $('#allowed-groups')[0].selectize.disable();
+      $('#allowed-groups').hide();
     }
   }
 </script>
