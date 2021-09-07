@@ -46,8 +46,8 @@
                 <div class="form-group" id="allowed-groups" {{if eq .AppSettings.RestrictAccess 2}}{{else}} style="display:none;"{{end}}>
                     <label for="groups">Allowed groups</label>
                     <select class="form-control" name="allowedgroups" multiple>
-                    {{range $group, $belongs := .AppSettings.AllowedGroups}}
-                        <option value="{{$group}}" {{if $belongs}}selected{{end}}>{{$group}}</option>
+                    {{range $group, $allowed := .AppSettings.AllowedGroups}}
+                        <option value="{{$group}}" {{if $allowed}}selected{{end}}>{{$group}}</option>
                     {{end}}
                     </select>
                 </div>

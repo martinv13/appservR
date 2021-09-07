@@ -102,7 +102,7 @@ func (s *AppServer) GetAllStatus() map[string]interface{} {
 func (s *AppServer) GetStatus(appName string) (map[string]interface{}, error) {
 	app, ok := s.appsByName[appName]
 	if !ok {
-		return nil, errors.New("App not found")
+		return nil, errors.New("app not found")
 	}
 	return app.GetStatus(true), nil
 }

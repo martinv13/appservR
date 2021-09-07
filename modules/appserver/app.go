@@ -12,6 +12,7 @@ import (
 	"github.com/appservR/appservR/modules/appsource"
 	"github.com/appservR/appservR/modules/config"
 	"github.com/appservR/appservR/modules/ssehandler"
+	"github.com/gin-gonic/gin"
 )
 
 type AppProxy struct {
@@ -109,7 +110,33 @@ func (p *AppProxy) GetSession(sessionID string) (*Session, error) {
 		sess.Instance.SetUserCount(1, true)
 		return sess, nil
 	}
-	return nil, errors.New("No running instance available")
+	return nil, errors.New("no running instance available")
+}
+
+// Check if the current user is allowed to access the app
+func (p *AppProxy) Authorized(c *gin.Context) bool {
+	switch p.App.RestrictAccess {
+	case config.AccessLevels.PUBLIC:
+		return true
+	case config.AccessLevels.ALL_USERS:
+		_, ok := c.Get("username")
+		return ok
+	case config.AccessLevels.SPECIFIC_GROUPS:
+		groups, ok := c.Get("groups")
+		if ok {
+			groupsMap, ok := groups.(map[string]bool)
+			if ok {
+				for _, g := range p.App.AllowedGroups {
+					if groupsMap[g.Name] {
+						return true
+					}
+				}
+			}
+		}
+		return false
+	default:
+		return false
+	}
 }
 
 // Rescale to appropriate number of workers (for now, a fixed user-defined number of workers)

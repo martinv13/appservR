@@ -81,7 +81,7 @@ func (m *UserModelDB) Save(user User, oldUsername string) error {
 		user.AuthSource = "PASSWORD"
 		err = m.DB.Create(&user).Error
 		if err != nil {
-			return errors.New("Username already exists.")
+			return errors.New("username already exists")
 		}
 
 		// else, update existing user
@@ -89,7 +89,7 @@ func (m *UserModelDB) Save(user User, oldUsername string) error {
 		var currentUser User
 		err := m.DB.First(&currentUser, "username=?", oldUsername).Error
 		if err != nil {
-			return fmt.Errorf("Update failed. Could not find user: %s", oldUsername)
+			return fmt.Errorf("update failed; could not find user: %s", oldUsername)
 		}
 		updateMap := map[string]interface{}{
 			"Username":      user.Username,
@@ -100,7 +100,7 @@ func (m *UserModelDB) Save(user User, oldUsername string) error {
 		}
 		err = m.DB.Model(&currentUser).Updates(updateMap).Error
 		if err != nil {
-			return fmt.Errorf("Error while updating user: %s", user.Username)
+			return fmt.Errorf("error while updating user: %s", user.Username)
 		}
 	}
 	return nil
@@ -109,17 +109,17 @@ func (m *UserModelDB) Save(user User, oldUsername string) error {
 // Create or update a user as admin
 func (m *UserModelDB) AdminSave(user User, oldUsername string) error {
 
-	groupNames := make([]string, len(user.Groups), len(user.Groups))
+	groupNames := make([]string, len(user.Groups))
 	for i, g := range user.Groups {
 		groupNames[i] = g.Name
 	}
 	var groups []Group
 	err := m.DB.Where("name IN ?", groupNames).Find(&groups).Error
 	if err != nil {
-		return fmt.Errorf("Specifying non existing groups for user: %s", user.Username)
+		return fmt.Errorf("specifying non existing groups for user: %s", user.Username)
 	}
 	if user.Username == "new" {
-		return errors.New("Username cannot be 'new'")
+		return errors.New("username cannot be 'new'")
 	}
 
 	if oldUsername == "new" {
@@ -127,7 +127,7 @@ func (m *UserModelDB) AdminSave(user User, oldUsername string) error {
 		user.Password = getHash(user.Password)
 		err = m.DB.Create(&user).Error
 		if err != nil {
-			return errors.New("Failed to create new user.")
+			return errors.New("failed to create new user")
 		}
 		return nil
 	}
@@ -135,7 +135,7 @@ func (m *UserModelDB) AdminSave(user User, oldUsername string) error {
 	var currentUser User
 	err = m.DB.First(&currentUser, "username=?", oldUsername).Error
 	if err != nil {
-		return fmt.Errorf("Update failed. Could not find user: %s", oldUsername)
+		return fmt.Errorf("update failed; could not find user: %s", oldUsername)
 	}
 
 	updateMap := map[string]interface{}{
@@ -150,12 +150,12 @@ func (m *UserModelDB) AdminSave(user User, oldUsername string) error {
 	err = tx.Model(&currentUser).Updates(updateMap).Error
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("Error while updating user: %s", oldUsername)
+		return fmt.Errorf("error while updating user: %s", oldUsername)
 	}
 	err = tx.Model(&currentUser).Association("Groups").Replace(groups)
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("Error while updating groups for user: %s", oldUsername)
+		return fmt.Errorf("error while updating groups for user: %s", oldUsername)
 	}
 	tx.Commit()
 

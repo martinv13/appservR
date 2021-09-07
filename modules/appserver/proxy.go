@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Get the app for a specific request, based on request path and cookies
+// Get the app for a specific request, based on request path and cookies, and check access right
 func (appServer *AppServer) GetApp(c *gin.Context) (*AppProxy, bool, error) {
 	appServer.RLock()
 	defer appServer.RUnlock()
@@ -20,6 +20,10 @@ func (appServer *AppServer) GetApp(c *gin.Context) (*AppProxy, bool, error) {
 	for _, app := range appServer.byPath {
 		appPath := strings.TrimSuffix(app.App.Path, "/")
 		if appPath == reqPath {
+			// check user auth
+			if !app.Authorized(c) {
+				return nil, false, errors.New("unauthorized")
+			}
 			if reqURI.Path != reqPath+"/" {
 				c.Redirect(http.StatusMovedPermanently, reqPath+"/")
 				c.Abort()
@@ -34,7 +38,7 @@ func (appServer *AppServer) GetApp(c *gin.Context) (*AppProxy, bool, error) {
 			return app, false, nil
 		}
 	}
-	return nil, false, errors.New("No matching app found")
+	return nil, false, errors.New("no matching app found")
 }
 
 // Create a proxy handler
@@ -42,13 +46,19 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 
 	director := func(req *http.Request) {}
 	proxy := &httputil.ReverseProxy{Director: director}
+	logger := s.config.Logger()
+
+	abortWithError := func(c *gin.Context, err error) {
+		logger.Debug(err.Error())
+		c.HTML(http.StatusNotFound, "appnotfound.html", nil)
+		c.Abort()
+	}
 
 	return func(c *gin.Context) {
-		// Find matching app
+		// Find matching app and check auth
 		app, root, err := s.GetApp(c)
 		if err != nil {
-			c.HTML(http.StatusNotFound, "appnotfound.html", nil)
-			c.Abort()
+			abortWithError(c, err)
 			return
 		}
 		// Find matching session or start new session
@@ -62,8 +72,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 			}
 		}
 		if sess == nil {
-			c.HTML(http.StatusNotFound, "appnotfound.html", nil)
-			c.Abort()
+			abortWithError(c, err)
 			return
 		}
 		origin, _ := url.Parse("http://localhost:" + sess.Instance.Port())
@@ -95,7 +104,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		http.SetCookie(c.Writer, &cookieSess)
 		modifyResponse := func(res *http.Response) error {
 			if res.StatusCode == 404 || res.StatusCode == 500 {
-				return errors.New("Error from server")
+				return errors.New("error from server")
 			}
 			return nil
 		}

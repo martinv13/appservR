@@ -4,18 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/appservR/appservR/modules/config"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
-
-var accessLevels = struct {
-	PUBLIC          int
-	ALL_USERS       int
-	SPECIFIC_GROUPS int
-}{
-	PUBLIC:          0,
-	ALL_USERS:       1,
-	SPECIFIC_GROUPS: 2,
-}
 
 type App struct {
 	gorm.Model
@@ -64,7 +56,7 @@ func NewAppModelDB(db *gorm.DB, groupModel *GroupModelDB) (*AppModelDB, error) {
 				AppSource:      "sample-app",
 				Workers:        2,
 				IsActive:       true,
-				RestrictAccess: accessLevels.PUBLIC,
+				RestrictAccess: config.AccessLevels.PUBLIC,
 			}
 			err = db.Create(&defaultApp).Error
 			if err != nil {
@@ -90,7 +82,7 @@ func (m *AppModelDB) All() ([]App, error) {
 // Find a specific app by app name
 func (m *AppModelDB) Find(name string) (App, error) {
 	var app App
-	err := m.DB.First(&app, "name = ?", name).Error
+	err := m.DB.Preload(clause.Associations).First(&app, "name = ?", name).Error
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return App{}, errors.New("unable to retrieve app from db")
@@ -104,20 +96,14 @@ func (m *AppModelDB) Find(name string) (App, error) {
 // Create or update a R app to the database
 func (m *AppModelDB) Save(app App, oldName string) error {
 
-	if app.RestrictAccess == accessLevels.SPECIFIC_GROUPS {
-		allGroups, err := m.groupModel.AllNames()
-		if err != nil {
-			return errors.New("unable to retrieve groups")
-		}
-		allGroupsMap := make(map[string]bool)
-		for _, g := range allGroups {
-			allGroupsMap[g] = true
-		}
-		for _, g := range app.AllowedGroups {
-			if _, ok := allGroupsMap[g.Name]; !ok {
-				return fmt.Errorf("specifying non existing groups '%s' for app: %s", g.Name, app.Name)
-			}
-		}
+	groupNames := make([]string, len(app.AllowedGroups))
+	for i, g := range app.AllowedGroups {
+		groupNames[i] = g.Name
+	}
+	var groups []Group
+	err := m.DB.Where("name IN ?", groupNames).Find(&groups).Error
+	if err != nil {
+		return fmt.Errorf("specifying non existing groups")
 	}
 
 	if app.Name == "new" {
@@ -134,7 +120,7 @@ func (m *AppModelDB) Save(app App, oldName string) error {
 
 	var currentApp App
 
-	err := m.DB.First(&currentApp, "name=?", oldName).Error
+	err = m.DB.First(&currentApp, "name=?", oldName).Error
 	if err != nil {
 		return fmt.Errorf("update failed; could not find app: %s", oldName)
 	}
@@ -156,7 +142,7 @@ func (m *AppModelDB) Save(app App, oldName string) error {
 		tx.Rollback()
 		return fmt.Errorf("error while updating app: %s", oldName)
 	}
-	err = tx.Model(&currentApp).Association("AllowedGroups").Replace(app.AllowedGroups)
+	err = tx.Model(&currentApp).Association("AllowedGroups").Replace(groups)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("error while updating allowed groups for app: %s", oldName)
@@ -176,7 +162,7 @@ func (m *AppModelDB) Delete(name string) error {
 	return nil
 }
 
-// Get an app as a map, directly usable in template
+// Get a map of boolean values, representing allowed groups
 func (m *AppModelDB) groupsMap(allowedGroups []Group, allGroups []string) map[string]bool {
 	groupsMap := make(map[string]bool)
 	for _, g := range allGroups {

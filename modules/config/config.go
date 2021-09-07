@@ -9,6 +9,16 @@ import (
 	"github.com/spf13/viper"
 )
 
+var AccessLevels = struct {
+	PUBLIC          int
+	ALL_USERS       int
+	SPECIFIC_GROUPS int
+}{
+	PUBLIC:          0,
+	ALL_USERS:       1,
+	SPECIFIC_GROUPS: 2,
+}
+
 type RunFlags struct {
 	Address string
 	Mode    string
