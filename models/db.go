@@ -34,7 +34,7 @@ func NewDB(conf config.Config) (*gorm.DB, error) {
 
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Group{})
-	db.AutoMigrate(&RApp{})
+	db.AutoMigrate(&App{})
 
 	return db, nil
 }

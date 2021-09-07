@@ -2,7 +2,6 @@ package appserver
 
 import (
 	"errors"
-	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -31,13 +30,13 @@ func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker,
 	if err != nil {
 		return nil, err
 	}
-	appServer.byPath = make([]*AppProxy, len(apps), len(apps))
+	appServer.byPath = make([]*AppProxy, len(apps))
 	for i := range apps {
 		app, err := NewAppProxy(apps[i], msgBroker, config)
 		if err != nil {
 			return nil, err
 		}
-		appServer.appsByName[apps[i].AppName] = app
+		appServer.appsByName[apps[i].Name] = app
 		appServer.byPath[i] = app
 	}
 	sort.SliceStable(appServer.byPath, appServer.prefixSort)
@@ -45,7 +44,7 @@ func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker,
 }
 
 // Apply app settings changes
-func (s *AppServer) Update(appName string, app models.RApp) error {
+func (s *AppServer) Update(appName string, app models.App) error {
 	s.Lock()
 	defer s.Unlock()
 	appProxy, ok := s.appsByName[appName]
@@ -55,24 +54,20 @@ func (s *AppServer) Update(appName string, app models.RApp) error {
 		if err != nil {
 			return err
 		}
-		s.appsByName[app.AppName] = appProxy
+		s.appsByName[app.Name] = appProxy
 		s.byPath = append(s.byPath, appProxy)
 		sort.SliceStable(s.byPath, s.prefixSort)
 	} else {
 		// updated app
-		prevApp := appProxy.RApp
+		prevApp := appProxy.App
 		appProxy.Update(app)
-		if app.AppName != prevApp.AppName {
-			delete(s.appsByName, prevApp.AppName)
-			s.appsByName[app.AppName] = appProxy
+		if app.Name != prevApp.Name {
+			delete(s.appsByName, prevApp.Name)
+			s.appsByName[app.Name] = appProxy
 		}
 		if app.Path != prevApp.Path {
 			sort.SliceStable(s.byPath, s.prefixSort)
 		}
-	}
-	log.Println("updated path")
-	for i := range s.byPath {
-		log.Println(s.byPath[i].RApp.Path)
 	}
 	return nil
 }
@@ -84,7 +79,7 @@ func (s *AppServer) Delete(appName string) error {
 	appProxy, ok := s.appsByName[appName]
 	i := findAppProxy(s.byPath, appName)
 	if !ok || i >= len(s.byPath) {
-		return errors.New("App does not exist")
+		return errors.New("app does not exist")
 	}
 	appProxy.Cleanup()
 	delete(s.appsByName, appName)
@@ -107,19 +102,19 @@ func (s *AppServer) GetAllStatus() map[string]interface{} {
 func (s *AppServer) GetStatus(appName string) (map[string]interface{}, error) {
 	app, ok := s.appsByName[appName]
 	if !ok {
-		return nil, errors.New("App not found")
+		return nil, errors.New("app not found")
 	}
 	return app.GetStatus(true), nil
 }
 
 func (s *AppServer) prefixSort(i, j int) bool {
-	return !strings.HasPrefix(s.byPath[i].RApp.Path,
-		s.byPath[j].RApp.Path)
+	return !strings.HasPrefix(s.byPath[i].App.Path,
+		s.byPath[j].App.Path)
 }
 
 func findAppProxy(p []*AppProxy, appName string) int {
 	for i, a := range p {
-		if a.RApp.AppName == appName {
+		if a.App.Name == appName {
 			return i
 		}
 	}

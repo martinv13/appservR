@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/appservR/appservR/modules/config"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-type RApp struct {
+type App struct {
 	gorm.Model
-	AppName         string `gorm:"unique"`
+	Name            string `gorm:"unique"`
 	Path            string
 	AppSource       string
 	AppDir          string
@@ -17,18 +19,18 @@ type RApp struct {
 	GitSourceBranch string
 	GitSourceToken  string
 	Workers         int
-	Active          bool
-	RestrictAccess  bool
+	IsActive        bool
+	RestrictAccess  int
 	AllowedGroups   []Group `gorm:"many2many:app_allowed_groups;"`
 }
 
 type AppModel interface {
-	All() ([]RApp, error)
-	Find(appName string) (RApp, error)
-	Save(app RApp, oldAppName string) error
-	Delete(appName string) error
-	AsMap(app RApp) (map[string]interface{}, error)
-	AsMapSlice(apps []RApp) ([]map[string]interface{}, error)
+	All() ([]App, error)
+	Find(name string) (App, error)
+	Save(app App, oldName string) error
+	Delete(name string) error
+	AsMap(app App) (map[string]interface{}, error)
+	AsMapSlice(apps []App) ([]map[string]interface{}, error)
 }
 
 type AppModelDB struct {
@@ -43,100 +45,94 @@ func NewAppModelDB(db *gorm.DB, groupModel *GroupModelDB) (*AppModelDB, error) {
 		groupModel: groupModel,
 	}
 
-	app := RApp{}
+	app := App{}
 
 	err := db.First(&app).Error
 	if err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
-		} else {
-			defaultApp := RApp{
-				AppName:        "sample-app",
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			defaultApp := App{
+				Name:           "sample-app",
 				Path:           "/",
 				AppSource:      "sample-app",
 				Workers:        2,
-				Active:         true,
-				RestrictAccess: false,
+				IsActive:       true,
+				RestrictAccess: config.AccessLevels.PUBLIC,
 			}
 			err = db.Create(&defaultApp).Error
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			return nil, err
 		}
 	}
 	return &appModel, nil
 }
 
 // Get all apps
-func (m *AppModelDB) All() ([]RApp, error) {
-	var apps []RApp
+func (m *AppModelDB) All() ([]App, error) {
+	var apps []App
 	err := m.DB.Find(&apps).Error
 	if err != nil {
-		return []RApp{}, errors.New("Unable to retrieve apps")
+		return []App{}, errors.New("unable to retrieve apps")
 	}
 	return apps, nil
 }
 
 // Find a specific app by app name
-func (m *AppModelDB) Find(appName string) (RApp, error) {
-	var app RApp
-	err := m.DB.First(&app, "app_name = ?", appName).Error
+func (m *AppModelDB) Find(name string) (App, error) {
+	var app App
+	err := m.DB.Preload(clause.Associations).First(&app, "name = ?", name).Error
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return RApp{}, errors.New("Unable to retrieve app from db")
+			return App{}, errors.New("unable to retrieve app from db")
 		} else {
-			return RApp{}, fmt.Errorf("App %s does not exist.", appName)
+			return App{}, fmt.Errorf("app %s does not exist", name)
 		}
 	}
 	return app, nil
 }
 
 // Create or update a R app to the database
-func (m *AppModelDB) Save(app RApp, oldAppName string) error {
+func (m *AppModelDB) Save(app App, oldName string) error {
 
-	if app.RestrictAccess {
-		allGroups, err := m.groupModel.AllNames()
-		if err != nil {
-			return errors.New("Unable to retrieve groups")
-		}
-		allGroupsMap := make(map[string]bool)
-		for _, g := range allGroups {
-			allGroupsMap[g] = true
-		}
-		for _, g := range app.AllowedGroups {
-			if _, ok := allGroupsMap[g.Name]; !ok {
-				return fmt.Errorf("Specifying non existing groups '%s' for app: %s", g.Name, app.AppName)
-			}
-		}
+	groupNames := make([]string, len(app.AllowedGroups))
+	for i, g := range app.AllowedGroups {
+		groupNames[i] = g.Name
+	}
+	var groups []Group
+	err := m.DB.Where("name IN ?", groupNames).Find(&groups).Error
+	if err != nil {
+		return fmt.Errorf("specifying non existing groups")
 	}
 
-	if app.AppName == "new" {
-		return errors.New("App name cannot be 'new'")
+	if app.Name == "new" {
+		return errors.New("app name cannot be 'new'")
 	}
 
-	if oldAppName == "new" {
+	if oldName == "new" {
 		err := m.DB.Create(&app).Error
 		if err != nil {
-			return errors.New("Failed to create new app")
+			return errors.New("failed to create new app")
 		}
 		return nil
 	}
 
-	var currentApp RApp
+	var currentApp App
 
-	err := m.DB.First(&currentApp, "app_name=?", oldAppName).Error
+	err = m.DB.First(&currentApp, "name=?", oldName).Error
 	if err != nil {
-		return fmt.Errorf("Update failed. Could not find app: %s", oldAppName)
+		return fmt.Errorf("update failed; could not find app: %s", oldName)
 	}
 	updateMap := map[string]interface{}{
-		"AppName":         app.AppName,
+		"Name":            app.Name,
 		"Path":            app.Path,
 		"AppDir":          app.AppDir,
 		"GitSourceUrl":    app.GitSourceUrl,
 		"GitSourceBranch": app.GitSourceBranch,
 		"GitSourceToken":  app.GitSourceToken,
 		"Workers":         app.Workers,
-		"Active":          app.Active,
+		"IsActive":        app.IsActive,
 		"RestrictAccess":  app.RestrictAccess,
 	}
 
@@ -144,12 +140,12 @@ func (m *AppModelDB) Save(app RApp, oldAppName string) error {
 	err = tx.Model(&currentApp).Updates(updateMap).Error
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("Error while updating app: %s", oldAppName)
+		return fmt.Errorf("error while updating app: %s", oldName)
 	}
-	err = tx.Model(&currentApp).Association("AllowedGroups").Replace(app.AllowedGroups)
+	err = tx.Model(&currentApp).Association("AllowedGroups").Replace(groups)
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("Error while updating allowed groups for app: %s", oldAppName)
+		return fmt.Errorf("error while updating allowed groups for app: %s", oldName)
 	}
 	tx.Commit()
 
@@ -157,16 +153,16 @@ func (m *AppModelDB) Save(app RApp, oldAppName string) error {
 }
 
 // Delete an app
-func (m *AppModelDB) Delete(appName string) error {
-	var app RApp
-	err := m.DB.Unscoped().Where("app_name = ?", appName).Delete(&app).Error
+func (m *AppModelDB) Delete(name string) error {
+	var app App
+	err := m.DB.Unscoped().Where("name = ?", name).Delete(&app).Error
 	if err != nil {
-		return fmt.Errorf("Error while deleting app: %s", appName)
+		return fmt.Errorf("error while deleting app: %s", name)
 	}
 	return nil
 }
 
-// Get an app as a map, directly usable in template
+// Get a map of boolean values, representing allowed groups
 func (m *AppModelDB) groupsMap(allowedGroups []Group, allGroups []string) map[string]bool {
 	groupsMap := make(map[string]bool)
 	for _, g := range allGroups {
@@ -179,37 +175,37 @@ func (m *AppModelDB) groupsMap(allowedGroups []Group, allGroups []string) map[st
 }
 
 // Get an app as a map, directly usable in template
-func (m *AppModelDB) AsMap(app RApp) (map[string]interface{}, error) {
+func (m *AppModelDB) AsMap(app App) (map[string]interface{}, error) {
 	allGroups, err := m.groupModel.AllNames()
 	if err != nil {
-		return nil, errors.New("Unable to retrieve groups")
+		return nil, errors.New("unable to retrieve groups")
 	}
 	return map[string]interface{}{
-		"AppName":         app.AppName,
+		"Name":            app.Name,
 		"Path":            app.Path,
 		"AppDir":          app.AppDir,
 		"GitSourceUrl":    app.GitSourceUrl,
 		"GitSourceBranch": app.GitSourceBranch,
 		"GitSourceToken":  app.GitSourceToken,
 		"Workers":         app.Workers,
-		"Active":          app.Active,
+		"IsActive":        app.IsActive,
 		"RestrictAccess":  app.RestrictAccess,
 		"AllowedGroups":   m.groupsMap(app.AllowedGroups, allGroups),
 	}, nil
 }
 
 // Get a slice of apps as a slice of maps, directly usable in template
-func (m *AppModelDB) AsMapSlice(apps []RApp) ([]map[string]interface{}, error) {
+func (m *AppModelDB) AsMapSlice(apps []App) ([]map[string]interface{}, error) {
 	allGroups, err := m.groupModel.AllNames()
 	if err != nil {
-		return nil, errors.New("Unable to retrieve groups")
+		return nil, errors.New("unable to retrieve groups")
 	}
-	appsMap := make([]map[string]interface{}, len(apps), len(apps))
+	appsMap := make([]map[string]interface{}, len(apps))
 	for i, app := range apps {
 		appsMap[i] = map[string]interface{}{
-			"AppName":        app.AppName,
+			"Name":           app.Name,
 			"Path":           app.Path,
-			"Active":         app.Active,
+			"IsActive":       app.IsActive,
 			"RestrictAccess": app.RestrictAccess,
 			"AllowedGroups":  m.groupsMap(app.AllowedGroups, allGroups),
 		}
