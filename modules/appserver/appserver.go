@@ -2,7 +2,6 @@ package appserver
 
 import (
 	"errors"
-	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -31,7 +30,7 @@ func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker,
 	if err != nil {
 		return nil, err
 	}
-	appServer.byPath = make([]*AppProxy, len(apps), len(apps))
+	appServer.byPath = make([]*AppProxy, len(apps))
 	for i := range apps {
 		app, err := NewAppProxy(apps[i], msgBroker, config)
 		if err != nil {
@@ -69,10 +68,6 @@ func (s *AppServer) Update(appName string, app models.RApp) error {
 		if app.Path != prevApp.Path {
 			sort.SliceStable(s.byPath, s.prefixSort)
 		}
-	}
-	log.Println("updated path")
-	for i := range s.byPath {
-		log.Println(s.byPath[i].RApp.Path)
 	}
 	return nil
 }

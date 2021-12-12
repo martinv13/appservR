@@ -109,7 +109,7 @@ func (p *AppProxy) GetSession(sessionID string) (*Session, error) {
 		sess.Instance.SetUserCount(1, true)
 		return sess, nil
 	}
-	return nil, errors.New("No running instance available")
+	return nil, errors.New("no running instance available")
 }
 
 // Rescale to appropriate number of workers (for now, a fixed user-defined number of workers)
@@ -145,7 +145,7 @@ func (p *AppProxy) Rescale() {
 	}
 	// if too many instances, phase out the one with less users connected
 	if nbInst > targetWorkers {
-		insts := make([]*Instance, nbInst, nbInst)
+		insts := make([]*Instance, nbInst)
 		i := 0
 		for _, inst := range p.Instances {
 			if inst.Status() != instStatus.PHASING_OUT {
@@ -169,7 +169,7 @@ func (p *AppProxy) doCloseSession(sessionID string) error {
 		delete(p.Sessions, sessionID)
 		return nil
 	}
-	return errors.New("Cannot find session")
+	return errors.New("cannot find session")
 }
 
 // End a specific session
@@ -206,9 +206,7 @@ func (p *AppProxy) Update(app models.RApp) {
 func (p *AppProxy) DeleteInstance(ID string) {
 	p.Lock()
 	defer p.Unlock()
-	if _, ok := p.Instances[ID]; ok {
-		delete(p.Instances, ID)
-	}
+	delete(p.Instances, ID)
 }
 
 // Return app status info as a map

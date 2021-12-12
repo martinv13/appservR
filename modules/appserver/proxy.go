@@ -34,7 +34,7 @@ func (appServer *AppServer) GetApp(c *gin.Context) (*AppProxy, bool, error) {
 			return app, false, nil
 		}
 	}
-	return nil, false, errors.New("No matching app found")
+	return nil, false, errors.New("no matching app found")
 }
 
 // Create a proxy handler
@@ -51,15 +51,19 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		// Case for redirects
+		if app == nil {
+			return
+		}
 		// Find matching session or start new session
 		var sess *Session
-		if root {
-			sess, err = app.GetSession("")
-		} else {
-			sessCookie, err := c.Request.Cookie("appservr_session")
-			if err == nil {
-				sess, err = app.GetSession(sessCookie.Value)
-			}
+		sessCookie, err := c.Request.Cookie("appservr_session")
+		var sessNotFound error
+		if err == nil {
+			sess, sessNotFound = app.GetSession(sessCookie.Value)
+		}
+		if root || sessNotFound != nil {
+			sess, _ = app.GetSession("")
 		}
 		if sess == nil {
 			c.HTML(http.StatusNotFound, "appnotfound.html", nil)
