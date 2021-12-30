@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Get the app for a specific request, based on request path and cookies
+// Get the app for a specific request, based on request path and cookies, and check access right
 func (appServer *AppServer) GetApp(c *gin.Context) (*AppProxy, bool, error) {
 	appServer.RLock()
 	defer appServer.RUnlock()
@@ -18,8 +18,12 @@ func (appServer *AppServer) GetApp(c *gin.Context) (*AppProxy, bool, error) {
 	reqURI, _ := url.Parse(r.RequestURI)
 	reqPath := strings.TrimSuffix(reqURI.Path, "/")
 	for _, app := range appServer.byPath {
-		appPath := strings.TrimSuffix(app.RApp.Path, "/")
+		appPath := strings.TrimSuffix(app.App.Path, "/")
 		if appPath == reqPath {
+			// check user auth
+			if !app.Authorized(c) {
+				return nil, false, errors.New("unauthorized")
+			}
 			if reqURI.Path != reqPath+"/" {
 				c.Redirect(http.StatusMovedPermanently, reqPath+"/")
 				c.Abort()
@@ -42,13 +46,19 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 
 	director := func(req *http.Request) {}
 	proxy := &httputil.ReverseProxy{Director: director}
+	logger := s.config.Logger()
+
+	abortWithError := func(c *gin.Context, err error) {
+		logger.Debug(err.Error())
+		c.HTML(http.StatusNotFound, "appnotfound.html", nil)
+		c.Abort()
+	}
 
 	return func(c *gin.Context) {
-		// Find matching app
+		// Find matching app and check auth
 		app, root, err := s.GetApp(c)
 		if err != nil {
-			c.HTML(http.StatusNotFound, "appnotfound.html", nil)
-			c.Abort()
+			abortWithError(c, err)
 			return
 		}
 		// Case for redirects
@@ -66,8 +76,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 			sess, _ = app.GetSession("")
 		}
 		if sess == nil {
-			c.HTML(http.StatusNotFound, "appnotfound.html", nil)
-			c.Abort()
+			abortWithError(c, err)
 			return
 		}
 		origin, _ := url.Parse("http://localhost:" + sess.Instance.Port())
@@ -78,16 +87,16 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		if displayedname, ok := c.Get("displayedname"); ok {
 			c.Request.Header.Set("appservR-displayedname", displayedname.(string))
 		}
-		c.Request.Header.Set("appservR-appname", app.RApp.AppName)
+		c.Request.Header.Set("appservR-appname", app.App.Name)
 
 		c.Request.URL.Scheme = "http"
 		c.Request.URL.Host = origin.Host
-		if app.RApp.Path != "/" {
-			c.Request.URL.Path = strings.Replace(c.Request.URL.Path, app.RApp.Path, "", -1)
+		if app.App.Path != "/" {
+			c.Request.URL.Path = strings.Replace(c.Request.URL.Path, app.App.Path, "", -1)
 		}
 		cookieApp := http.Cookie{
 			Name:  "appservr_appid",
-			Value: app.RApp.AppName,
+			Value: app.App.Name,
 			Path:  "/",
 		}
 		http.SetCookie(c.Writer, &cookieApp)
@@ -99,7 +108,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		http.SetCookie(c.Writer, &cookieSess)
 		modifyResponse := func(res *http.Response) error {
 			if res.StatusCode == 404 || res.StatusCode == 500 {
-				return errors.New("Error from server")
+				return errors.New("error from server")
 			}
 			return nil
 		}

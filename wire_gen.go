@@ -38,7 +38,7 @@ func InitializeServer(flags config.RunFlags) (*server.AppRouter, error) {
 	if err != nil {
 		return nil, err
 	}
-	appController := controllers.NewAppController(appModelDB, appServer)
+	appController := controllers.NewAppController(appModelDB, appServer, configViper)
 	userModelDB := models.NewUserModelDB(db, groupModelDB)
 	userController := controllers.NewUserController(userModelDB)
 	groupController := controllers.NewGroupController(groupModelDB)

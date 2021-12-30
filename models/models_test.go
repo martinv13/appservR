@@ -120,8 +120,8 @@ func TestDataModelDB(t *testing.T) {
 		}
 	})
 	t.Run("app=create", func(t *testing.T) {
-		app := RApp{
-			AppName: "test-app",
+		app := App{
+			Name:    "test-app",
 			Path:    "/test-app",
 			AppDir:  "apps/sample-app/",
 			Workers: 1,

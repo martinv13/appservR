@@ -21,7 +21,7 @@ type AppSourceDir struct {
 	err    error
 }
 
-func NewAppSource(app models.RApp, conf config.Config) AppSource {
+func NewAppSource(app models.App, conf config.Config) AppSource {
 	if app.AppSource == "sample-app" {
 		return NewAppSourceSampleApp(app, conf)
 	} else {
@@ -29,7 +29,7 @@ func NewAppSource(app models.RApp, conf config.Config) AppSource {
 	}
 }
 
-func NewAppSourceDir(app models.RApp, conf config.Config) *AppSourceDir {
+func NewAppSourceDir(app models.App, conf config.Config) *AppSourceDir {
 	path := app.AppDir
 	if !filepath.IsAbs(path) {
 		path = filepath.Join(conf.ExecutableFolder(), path)
@@ -41,7 +41,7 @@ func NewAppSourceDir(app models.RApp, conf config.Config) *AppSourceDir {
 	return &AppSourceDir{AppDir: path}
 }
 
-func NewAppSourceSampleApp(app models.RApp, conf config.Config) *AppSourceDir {
+func NewAppSourceSampleApp(app models.App, conf config.Config) *AppSourceDir {
 	path := conf.ExecutableFolder() + "/apps"
 	_, err := os.Stat(path)
 	if err != nil {

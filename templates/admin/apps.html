@@ -42,7 +42,7 @@
     </div>
     {{range .apps}}
     <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
-        <div class="card w-100 mb-4" id="card-{{.AppName}}">
+        <div class="card w-100 mb-4" id="card-{{.Name}}">
           {{if .Status.RunningInst}}
           <div style="position: absolute; top: 1px; right: 30px; z-index:10">
             <a href="{{.Path}}" target="_blank" class="text-decoration-none"><svg width="12" height="12">
@@ -52,7 +52,7 @@
           {{end}}
             <div style="background-color:{{if .Status.RunningInst}}#32ae27{{else}}#d92a2a{{end}}; position: absolute; top: 10px; right: 10px; border-radius: 6px; width: 12px; height: 12px;"></div>
             <div class="card-body">
-                <a href="/admin/apps/{{.AppName}}" class="card-title searchable stretched-link h5">{{.Title}}</a>
+                <a href="/admin/apps/{{.Name}}" class="card-title searchable stretched-link h5">{{.Title}}</a>
                 <p class="card-text">
                   {{if .Status.RunningInst}}{{.Status.RunningInst}} running instances{{else}}no running instances{{end}}
                 </p>

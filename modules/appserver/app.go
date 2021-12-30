@@ -12,11 +12,12 @@ import (
 	"github.com/appservR/appservR/modules/appsource"
 	"github.com/appservR/appservR/modules/config"
 	"github.com/appservR/appservR/modules/ssehandler"
+	"github.com/gin-gonic/gin"
 )
 
 type AppProxy struct {
 	sync.RWMutex
-	RApp            models.RApp
+	App             models.App
 	AppSource       appsource.AppSource
 	StatusStream    *ssehandler.MessageBroker
 	Instances       map[string]*Instance
@@ -26,9 +27,9 @@ type AppProxy struct {
 }
 
 // Create a new app proxy
-func NewAppProxy(app models.RApp, msgBroker *ssehandler.MessageBroker, config config.Config) (*AppProxy, error) {
+func NewAppProxy(app models.App, msgBroker *ssehandler.MessageBroker, config config.Config) (*AppProxy, error) {
 	p := &AppProxy{
-		RApp:            app,
+		App:             app,
 		AppSource:       appsource.NewAppSource(app, config),
 		StatusStream:    msgBroker,
 		Instances:       map[string]*Instance{},
@@ -112,6 +113,32 @@ func (p *AppProxy) GetSession(sessionID string) (*Session, error) {
 	return nil, errors.New("no running instance available")
 }
 
+// Check if the current user is allowed to access the app
+func (p *AppProxy) Authorized(c *gin.Context) bool {
+	switch p.App.RestrictAccess {
+	case config.AccessLevels.PUBLIC:
+		return true
+	case config.AccessLevels.ALL_USERS:
+		_, ok := c.Get("username")
+		return ok
+	case config.AccessLevels.SPECIFIC_GROUPS:
+		groups, ok := c.Get("groups")
+		if ok {
+			groupsMap, ok := groups.(map[string]bool)
+			if ok {
+				for _, g := range p.App.AllowedGroups {
+					if groupsMap[g.Name] {
+						return true
+					}
+				}
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
 // Rescale to appropriate number of workers (for now, a fixed user-defined number of workers)
 func (p *AppProxy) Rescale() {
 	p.Lock()
@@ -133,13 +160,13 @@ func (p *AppProxy) Rescale() {
 			nbInst++
 		}
 	}
-	targetWorkers := p.RApp.Workers
-	if !p.RApp.Active {
+	targetWorkers := p.App.Workers
+	if !p.App.IsActive {
 		targetWorkers = 0
 	}
 	// if too few instances, start new ones
 	for w := 0; w < targetWorkers-nbInst; w++ {
-		inst := NewInstance(p.RApp.AppName, p.AppSource.Path(), p.config)
+		inst := NewInstance(p.App.Name, p.AppSource.Path(), p.config)
 		inst.Start()
 		p.Instances[inst.ID] = inst
 	}
@@ -190,12 +217,12 @@ func (p *AppProxy) phaseOut() {
 }
 
 // Apply changes to app settings
-func (p *AppProxy) Update(app models.RApp) {
+func (p *AppProxy) Update(app models.App) {
 	p.Lock()
 	defer p.Unlock()
-	prevApp := p.RApp
-	p.RApp = app
-	if prevApp.AppDir != app.AppDir || prevApp.Active != app.Active {
+	prevApp := p.App
+	p.App = app
+	if prevApp.AppDir != app.AppDir || prevApp.IsActive != app.IsActive {
 		p.phaseOut()
 	} else if prevApp.Workers != app.Workers {
 		go p.Rescale()
@@ -250,7 +277,7 @@ func (p *AppProxy) ReportStatus() {
 		msg = fmt.Sprintf("%d connected users", users)
 	}
 	msgData, _ := json.Marshal(map[string]string{
-		"appName": p.RApp.AppName,
+		"appName": p.App.Name,
 		"value":   msg,
 	})
 	p.StatusStream.Message <- string(msgData)
