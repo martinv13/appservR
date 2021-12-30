@@ -49,7 +49,9 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 	logger := s.config.Logger()
 
 	abortWithError := func(c *gin.Context, err error) {
-		logger.Debug(err.Error())
+		if err != nil {
+			logger.Debug(err.Error())
+		}
 		c.HTML(http.StatusNotFound, "appnotfound.html", nil)
 		c.Abort()
 	}
@@ -61,15 +63,19 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 			abortWithError(c, err)
 			return
 		}
+		// Case for redirects
+		if app == nil {
+			return
+		}
 		// Find matching session or start new session
 		var sess *Session
-		if root {
-			sess, err = app.GetSession("")
-		} else {
-			sessCookie, err := c.Request.Cookie("appservr_session")
-			if err == nil {
-				sess, err = app.GetSession(sessCookie.Value)
-			}
+		sessCookie, err := c.Request.Cookie("appservr_session")
+		var sessNotFound error
+		if err == nil {
+			sess, sessNotFound = app.GetSession(sessCookie.Value)
+		}
+		if root || sessNotFound != nil {
+			sess, _ = app.GetSession("")
 		}
 		if sess == nil {
 			abortWithError(c, err)

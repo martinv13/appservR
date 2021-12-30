@@ -11,6 +11,7 @@ import (
 	"github.com/appservR/appservR/modules/ssehandler"
 )
 
+// A struct to store all running apps objects
 type AppServer struct {
 	sync.RWMutex
 	broker     *ssehandler.MessageBroker
@@ -107,11 +108,13 @@ func (s *AppServer) GetStatus(appName string) (map[string]interface{}, error) {
 	return app.GetStatus(true), nil
 }
 
+// A comparison function for AppServer structs based on app path prefixing one another
 func (s *AppServer) prefixSort(i, j int) bool {
 	return !strings.HasPrefix(s.byPath[i].App.Path,
 		s.byPath[j].App.Path)
 }
 
+// Find a specific app proxy in a slice
 func findAppProxy(p []*AppProxy, appName string) int {
 	for i, a := range p {
 		if a.App.Name == appName {

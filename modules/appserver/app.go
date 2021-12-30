@@ -15,15 +15,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// A struct to hold objects related to a running app
 type AppProxy struct {
 	sync.RWMutex
-	App             models.App
-	AppSource       appsource.AppSource
-	StatusStream    *ssehandler.MessageBroker
-	Instances       map[string]*Instance
-	Sessions        map[string]*Session
-	SessionsGCTimer *time.Timer
-	config          config.Config
+	App             models.App                // the app settings
+	AppSource       appsource.AppSource       // the app R source files
+	StatusStream    *ssehandler.MessageBroker // global message broker for SSEvents
+	Instances       map[string]*Instance      // running instances of the app
+	Sessions        map[string]*Session       // session started by users
+	SessionsGCTimer *time.Timer               // timer to garbage collect sessions
+	config          config.Config             // global config object
 }
 
 // Create a new app proxy
@@ -172,7 +173,7 @@ func (p *AppProxy) Rescale() {
 	}
 	// if too many instances, phase out the one with less users connected
 	if nbInst > targetWorkers {
-		insts := make([]*Instance, nbInst, nbInst)
+		insts := make([]*Instance, nbInst)
 		i := 0
 		for _, inst := range p.Instances {
 			if inst.Status() != instStatus.PHASING_OUT {
@@ -196,7 +197,7 @@ func (p *AppProxy) doCloseSession(sessionID string) error {
 		delete(p.Sessions, sessionID)
 		return nil
 	}
-	return errors.New("Cannot find session")
+	return errors.New("cannot find session")
 }
 
 // End a specific session
@@ -233,9 +234,7 @@ func (p *AppProxy) Update(app models.App) {
 func (p *AppProxy) DeleteInstance(ID string) {
 	p.Lock()
 	defer p.Unlock()
-	if _, ok := p.Instances[ID]; ok {
-		delete(p.Instances, ID)
-	}
+	delete(p.Instances, ID)
 }
 
 // Return app status info as a map
