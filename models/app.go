@@ -54,6 +54,7 @@ func NewAppModelDB(db *gorm.DB, groupModel *GroupModelDB) (*AppModelDB, error) {
 				Name:           "sample-app",
 				Path:           "/",
 				AppSource:      "sample-app",
+				AppDir:         "apps/sample-app/",
 				Workers:        2,
 				IsActive:       true,
 				RestrictAccess: config.AccessLevels.PUBLIC,
@@ -72,7 +73,7 @@ func NewAppModelDB(db *gorm.DB, groupModel *GroupModelDB) (*AppModelDB, error) {
 // Get all apps
 func (m *AppModelDB) All() ([]App, error) {
 	var apps []App
-	err := m.DB.Find(&apps).Error
+	err := m.DB.Preload("AllowedGroups").Find(&apps).Error
 	if err != nil {
 		return []App{}, errors.New("unable to retrieve apps")
 	}

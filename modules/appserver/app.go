@@ -15,15 +15,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// A struct to hold objects related to a running app
 type AppProxy struct {
 	sync.RWMutex
-	App             models.App
-	AppSource       appsource.AppSource
-	StatusStream    *ssehandler.MessageBroker
-	Instances       map[string]*Instance
-	Sessions        map[string]*Session
-	SessionsGCTimer *time.Timer
-	config          config.Config
+	App             models.App                // the app settings
+	AppSource       appsource.AppSource       // the app R source files
+	StatusStream    *ssehandler.MessageBroker // global message broker for SSEvents
+	Instances       map[string]*Instance      // running instances of the app
+	Sessions        map[string]*Session       // session started by users
+	SessionsGCTimer *time.Timer               // timer to garbage collect sessions
+	config          config.Config             // global config object
 }
 
 // Create a new app proxy

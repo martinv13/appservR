@@ -49,7 +49,9 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 	logger := s.config.Logger()
 
 	abortWithError := func(c *gin.Context, err error) {
-		logger.Debug(err.Error())
+		if err != nil {
+			logger.Debug(err.Error())
+		}
 		c.HTML(http.StatusNotFound, "appnotfound.html", nil)
 		c.Abort()
 	}

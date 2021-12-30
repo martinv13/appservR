@@ -10,12 +10,14 @@ import (
 	"github.com/appservR/appservR/modules/config"
 )
 
+// A generic application source interface
 type AppSource interface {
-	Path() string
-	Cleanup() error
-	Error() error
+	Path() string   // get the path to the folder containing R app scripts
+	Cleanup() error // cleanup if any when app is deleted
+	Error() error   // get the error status if any
 }
 
+// A simple app source based on a local folder
 type AppSourceDir struct {
 	AppDir string
 	err    error
