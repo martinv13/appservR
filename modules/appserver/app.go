@@ -31,7 +31,7 @@ type AppProxy struct {
 func NewAppProxy(app models.App, msgBroker *ssehandler.MessageBroker, config config.Config) (*AppProxy, error) {
 	p := &AppProxy{
 		App:             app,
-		AppSource:       appsource.NewAppSource(app, config),
+		AppSource:       appsource.NewAppSource(app, config, false),
 		StatusStream:    msgBroker,
 		Instances:       map[string]*Instance{},
 		Sessions:        map[string]*Session{},
@@ -73,7 +73,7 @@ func (p *AppProxy) Cleanup() {
 
 // Find an existing session or create a new session and selects
 // the most appropriate running instance according to current load
-func (p *AppProxy) GetSession(sessionID string) (*Session, error) {
+func (p *AppProxy) GetSession(sessionID string, userCount bool) (*Session, error) {
 	p.Lock()
 	defer func() {
 		p.Unlock()
@@ -89,9 +89,10 @@ func (p *AppProxy) GetSession(sessionID string) (*Session, error) {
 	if sess.Instance != nil {
 		if sess.Instance.Status() == instStatus.RUNNING {
 			sess.LastActive = time.Now().Unix()
+			if userCount {
+				sess.Instance.SetUserCount(1, true)
+			}
 			return sess, nil
-		} else {
-			sess.Instance.SetUserCount(-1, true)
 		}
 	}
 
@@ -108,7 +109,9 @@ func (p *AppProxy) GetSession(sessionID string) (*Session, error) {
 	if bestInstID != "" {
 		sess.Instance = p.Instances[bestInstID]
 		p.Sessions[sess.ID] = sess
-		sess.Instance.SetUserCount(1, true)
+		if userCount {
+			sess.Instance.SetUserCount(1, true)
+		}
 		return sess, nil
 	}
 	return nil, errors.New("no running instance available")
@@ -223,6 +226,9 @@ func (p *AppProxy) Update(app models.App) {
 	defer p.Unlock()
 	prevApp := p.App
 	p.App = app
+	if prevApp.AppDir != app.AppDir {
+		p.AppSource = appsource.NewAppSource(app, p.config, false)
+	}
 	if prevApp.AppDir != app.AppDir || prevApp.IsActive != app.IsActive {
 		p.phaseOut()
 	} else if prevApp.Workers != app.Workers {
@@ -241,6 +247,7 @@ func (p *AppProxy) DeleteInstance(ID string) {
 func (app *AppProxy) GetStatus(detailed bool) map[string]interface{} {
 	nbRunning := 0
 	nbPhasingOut := 0
+	userCount := 0
 	stdErr := []string{}
 	for _, i := range app.Instances {
 		status := i.Status()
@@ -252,11 +259,12 @@ func (app *AppProxy) GetStatus(detailed bool) map[string]interface{} {
 		if detailed {
 			stdErr = append(stdErr, i.StdErr())
 		}
+		userCount += i.UserCount()
 	}
 	status := map[string]interface{}{
 		"RunningInst":    nbRunning,
 		"PhasingOutInst": nbPhasingOut,
-		"ConnectedUsers": len(app.Sessions),
+		"ConnectedUsers": userCount,
 	}
 	if detailed {
 		status["StdErr"] = stdErr
@@ -268,14 +276,17 @@ func (app *AppProxy) GetStatus(detailed bool) map[string]interface{} {
 func (p *AppProxy) ReportStatus() {
 	p.RLock()
 	defer p.RUnlock()
-	users := len(p.Sessions)
+	userCount := 0
+	for _, i := range p.Instances {
+		userCount += i.UserCount()
+	}
 	msg := ""
-	if users == 0 {
+	if userCount == 0 {
 		msg = "no connected user"
-	} else if users == 1 {
+	} else if userCount == 1 {
 		msg = "1 connected user"
 	} else {
-		msg = fmt.Sprintf("%d connected users", users)
+		msg = fmt.Sprintf("%d connected users", userCount)
 	}
 	msgData, _ := json.Marshal(map[string]string{
 		"appName": p.App.Name,

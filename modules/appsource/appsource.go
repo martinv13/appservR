@@ -23,12 +23,13 @@ type AppSourceDir struct {
 	err    error
 }
 
-func NewAppSource(app models.App, conf config.Config) AppSource {
+func NewAppSource(app models.App, conf config.Config, checkOnly bool) AppSource {
 	if app.AppSource == "sample-app" {
 		return NewAppSourceSampleApp(app, conf)
-	} else {
+	} else if app.AppSource == "directory" {
 		return NewAppSourceDir(app, conf)
 	}
+	return nil
 }
 
 func NewAppSourceDir(app models.App, conf config.Config) *AppSourceDir {
@@ -38,7 +39,13 @@ func NewAppSourceDir(app models.App, conf config.Config) *AppSourceDir {
 	}
 	_, err := os.Stat(path)
 	if err != nil {
-		return &AppSourceDir{AppDir: "", err: errors.New("App directory path does not exist")}
+		return &AppSourceDir{AppDir: "", err: errors.New("app directory path does not exist")}
+	}
+	_, err_app := os.Stat(filepath.Join(path, "app.R"))
+	_, err_server := os.Stat(filepath.Join(path, "server.R"))
+	_, err_ui := os.Stat(filepath.Join(path, "ui.R"))
+	if err_app != nil && (err_server != nil || err_ui != nil) {
+		return &AppSourceDir{AppDir: "", err: errors.New("app directory does not contain app.R or server.R and ui.R files")}
 	}
 	return &AppSourceDir{AppDir: path}
 }
@@ -49,7 +56,7 @@ func NewAppSourceSampleApp(app models.App, conf config.Config) *AppSourceDir {
 	if err != nil {
 		err = os.Mkdir(path, 0700)
 		if err != nil {
-			return &AppSourceDir{AppDir: "", err: fmt.Errorf("Unable to create directory %s", path)}
+			return &AppSourceDir{AppDir: "", err: fmt.Errorf("unable to create directory %s", path)}
 		}
 	}
 	path = path + "/sample-app"
@@ -57,23 +64,23 @@ func NewAppSourceSampleApp(app models.App, conf config.Config) *AppSourceDir {
 	if err != nil {
 		err = os.Mkdir(path, 0700)
 		if err != nil {
-			return &AppSourceDir{AppDir: "", err: fmt.Errorf("Unable to create directory %s", path)}
+			return &AppSourceDir{AppDir: "", err: fmt.Errorf("unable to create directory %s", path)}
 		}
 	}
 	path, err = filepath.Abs(path)
 	if err != nil {
-		return &AppSourceDir{AppDir: "", err: fmt.Errorf("Unable to get absolute path")}
+		return &AppSourceDir{AppDir: "", err: fmt.Errorf("unable to get absolute path")}
 	}
 	_, err = os.Stat(path + "/app.R")
 	if err != nil {
 		f, err := os.Create(path + "/app.R")
 		if err != nil {
-			return &AppSourceDir{AppDir: "", err: errors.New("Unable to write file app.R")}
+			return &AppSourceDir{AppDir: "", err: errors.New("unable to write file app.R")}
 		}
 		defer f.Close()
 		_, err = f.WriteString(sampleApp)
 		if err != nil {
-			return &AppSourceDir{AppDir: "", err: errors.New("Unable to write file app.R")}
+			return &AppSourceDir{AppDir: "", err: errors.New("unable to write file app.R")}
 		}
 	}
 	return &AppSourceDir{AppDir: path}
@@ -89,11 +96,7 @@ func (s *AppSourceDir) Error() error {
 	return s.err
 }
 
-// Remove R app directory
+// Nothing to do for cleanup: won't delete any files
 func (s *AppSourceDir) Cleanup() error {
-	err := os.RemoveAll(s.AppDir)
-	if err != nil {
-		return fmt.Errorf("Unable to delete path %s", s.AppDir)
-	}
 	return nil
 }
