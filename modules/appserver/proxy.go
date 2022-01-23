@@ -83,6 +83,8 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 			abortWithError(c, err)
 			return
 		}
+		sessID := sess.ID
+		inst := sess.Instance
 		origin, _ := url.Parse("http://localhost:" + sess.Instance.Port())
 
 		if username, ok := c.Get("username"); ok {
@@ -106,7 +108,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		http.SetCookie(c.Writer, &cookieApp)
 		cookieSess := http.Cookie{
 			Name:  "appservr_session",
-			Value: sess.ID,
+			Value: sessID,
 			Path:  "/",
 		}
 		http.SetCookie(c.Writer, &cookieSess)
@@ -125,7 +127,8 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		proxy.ServeHTTP(c.Writer, c.Request)
 		// In case of websocket connection, close session when socket is disconnected
 		if ws {
-			app.CloseSession(sess.ID)
+			app.CloseSession(sessID)
+			inst.SetUserCount(-1, true)
 		}
 	}
 }

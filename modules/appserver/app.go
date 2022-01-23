@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
@@ -150,17 +149,11 @@ func (p *AppProxy) Rescale() {
 		p.Unlock()
 		go p.ReportStatus()
 	}()
+	// count active instances
 	nbInst := 0
 	for _, inst := range p.Instances {
 		status := inst.Status()
-		if status == instStatus.PHASING_OUT {
-			if inst.UserCount() == 0 {
-				err := inst.Stop()
-				if err == nil {
-					delete(p.Instances, inst.ID)
-				}
-			}
-		} else {
+		if status == instStatus.STARTING || status == instStatus.RUNNING {
 			nbInst++
 		}
 	}
@@ -174,29 +167,23 @@ func (p *AppProxy) Rescale() {
 		inst.Start()
 		p.Instances[inst.ID] = inst
 	}
-	// if too many instances, phase out the one with less users connected
-	if nbInst > targetWorkers {
-		insts := make([]*Instance, nbInst)
-		i := 0
-		for _, inst := range p.Instances {
-			if inst.Status() != instStatus.PHASING_OUT {
-				insts[i] = inst
-				i++
+	// stopped phased out instances with no connected users
+	for _, inst := range p.Instances {
+		status := inst.Status()
+		if status == instStatus.PHASING_OUT {
+			if inst.UserCount() == 0 {
+				err := inst.Stop()
+				if err == nil {
+					delete(p.Instances, inst.ID)
+				}
 			}
-		}
-		sort.Slice(insts, func(i int, j int) bool {
-			return insts[i].UserCount() < insts[j].UserCount()
-		})
-		for i = 0; i < nbInst-targetWorkers; i++ {
-			insts[i].PhaseOut()
 		}
 	}
 }
 
 // End a specific session without lock and without rescaling
 func (p *AppProxy) doCloseSession(sessionID string) error {
-	if sess, ok := p.Sessions[sessionID]; ok {
-		sess.Instance.SetUserCount(-1, true)
+	if _, ok := p.Sessions[sessionID]; ok {
 		delete(p.Sessions, sessionID)
 		return nil
 	}

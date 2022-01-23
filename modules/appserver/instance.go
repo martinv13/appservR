@@ -3,6 +3,7 @@ package appserver
 import (
 	"bufio"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -32,26 +33,27 @@ var instStatus = struct {
 	STARTING    string
 	RUNNING     string
 	PHASING_OUT string
+	STOPPING    string
 	ERROR       string
 	STOPPED     string
 }{
 	STARTING:    "STARTING",
 	RUNNING:     "RUNNING",
 	PHASING_OUT: "PHASING_OUT",
+	STOPPING:    "STOPPING",
 	ERROR:       "ERROR",
 	STOPPED:     "STOPPED",
 }
 
 // Create a new instance of the app
 func NewInstance(appName string, appDir string, conf config.Config) *Instance {
-	inst := &Instance{
+	return &Instance{
 		ID:      uuid.NewV4().String()[0:6],
 		appName: appName,
 		appDir:  appDir,
 		config:  conf,
 		status:  instStatus.STOPPED,
 	}
-	return inst
 }
 
 // Get instance status
@@ -68,14 +70,14 @@ func (inst *Instance) Port() string {
 	return inst.port
 }
 
-// Get instance status
+// Get instance user count
 func (inst *Instance) UserCount() int {
 	inst.RLock()
 	defer inst.RUnlock()
 	return inst.userCount
 }
 
-// Get instance status
+// Get instance console output
 func (inst *Instance) StdErr() string {
 	inst.RLock()
 	defer inst.RUnlock()
@@ -96,20 +98,26 @@ func (inst *Instance) Start() error {
 	if err != nil {
 		inst.status = instStatus.ERROR
 		inst.stdErr = "App source directory does not exist"
-		return errors.New("App source directory does not exist")
+		return errors.New("app source directory does not exist")
 	}
 	inst.status = instStatus.STARTING
 	cmd := exec.Command(inst.config.GetString("Rscript"), "-e", "shiny::runApp('.', port="+inst.port+")")
+	inst.cmd = cmd
+	cmd = configCmd(cmd)
 	cmd.Dir = inst.appDir
 	cmd.Env = os.Environ()
-	inst.cmd = cmd
+	stdOut, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
 	stdErr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
 	}
 	// Goroutine to read output and save stderr
-	scanner := bufio.NewScanner(stdErr)
 	go func() {
+		merged := io.MultiReader(stdErr, stdOut)
+		scanner := bufio.NewScanner(merged)
 		for scanner.Scan() {
 			line := scanner.Text()
 			inst.Lock()
@@ -135,21 +143,20 @@ func (inst *Instance) Start() error {
 		err := cmd.Wait()
 		inst.Lock()
 		defer inst.Unlock()
-		restart := inst.status != instStatus.PHASING_OUT
-		if err != nil {
-			logger.Info(inst.appName + " instance exited with error (" + inst.ID + ")")
-			logger.Info(err.Error())
-			inst.status = instStatus.ERROR
-		} else {
-			logger.Info(inst.appName + " instance exited successfully (" + inst.ID + ")")
+		if inst.status == instStatus.STOPPING {
+			logger.Info(inst.appName + " instance stopped (" + inst.ID + ")")
 			inst.status = instStatus.STOPPED
-		}
-		if restart {
+		} else {
+			if err != nil {
+				logger.Info(inst.appName + " instance exited with error (" + inst.ID + ")")
+				logger.Info(err.Error())
+				inst.status = instStatus.ERROR
+			} else {
+				logger.Info(inst.appName + " instance exited successfully (" + inst.ID + ")")
+				inst.status = instStatus.STOPPED
+			}
 			inst.restartDelay = inst.restartDelay*2 + 1
-			go func(restartDelay int) {
-				time.Sleep(time.Duration(restartDelay) * time.Second)
-				inst.Start()
-			}(inst.restartDelay)
+			time.AfterFunc(time.Duration(inst.restartDelay)*time.Second, func() { inst.Start() })
 		}
 	}()
 
@@ -162,14 +169,15 @@ func (inst *Instance) PhaseOut() {
 	defer inst.Unlock()
 	inst.status = instStatus.PHASING_OUT
 	if inst.userCount == 0 {
+		inst.status = instStatus.STOPPING
 		inst.doStop()
 	}
 }
 
 // Stop an app instance
 func (inst *Instance) doStop() error {
-	if inst.cmd != nil && inst.cmd.Process != nil {
-		err := inst.cmd.Process.Kill()
+	if inst.cmd != nil {
+		err := killCmd(inst.cmd)
 		if err != nil {
 			return err
 		}
@@ -182,6 +190,7 @@ func (inst *Instance) doStop() error {
 func (inst *Instance) Stop() error {
 	inst.Lock()
 	defer inst.Unlock()
+	inst.status = instStatus.STOPPING
 	return inst.doStop()
 }
 
@@ -193,5 +202,8 @@ func (inst *Instance) SetUserCount(incr int, relative bool) {
 		inst.userCount += incr
 	} else {
 		inst.userCount = incr
+	}
+	if inst.userCount < 0 {
+		inst.userCount = 0
 	}
 }
