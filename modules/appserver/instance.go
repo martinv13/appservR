@@ -168,10 +168,6 @@ func (inst *Instance) PhaseOut() {
 	inst.Lock()
 	defer inst.Unlock()
 	inst.status = instStatus.PHASING_OUT
-	if inst.userCount == 0 {
-		inst.status = instStatus.STOPPING
-		inst.doStop()
-	}
 }
 
 // Stop an app instance

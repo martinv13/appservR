@@ -2,9 +2,11 @@
 
 package appserver
 
-import {
+import (
+	"os/exec"
+
 	"golang.org/x/sys/unix"
-}
+)
 
 // Configure cmd to kill all children on Linux
 func configCmd(cmd *exec.Cmd) *exec.Cmd {
