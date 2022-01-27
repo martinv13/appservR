@@ -8,12 +8,15 @@ import (
 
 	"github.com/appservR/appservR/models"
 	"github.com/golang-jwt/jwt"
+    uuid "github.com/satori/go.uuid"
 )
 
+var randomSecret = uuid.NewV4().String()
+
 func getSecretKey() string {
-	secret := os.Getenv("SECRET")
+	secret := os.Getenv("APPSERVR_AUTH_SECRET")
 	if secret == "" {
-		secret = "secret"
+		secret = randomSecret
 	}
 	return secret
 }
