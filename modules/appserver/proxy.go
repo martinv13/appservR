@@ -67,20 +67,24 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		if app == nil {
 			return
 		}
+		// Is current reqest a websocket upgrade?
+		var ws = c.Request.Header.Get("Upgrade") == "websocket"
 		// Find matching session or start new session
 		var sess *Session
 		sessCookie, err := c.Request.Cookie("appservr_session")
 		var sessNotFound error
 		if err == nil {
-			sess, sessNotFound = app.GetSession(sessCookie.Value)
+			sess, sessNotFound = app.GetSession(sessCookie.Value, ws)
 		}
 		if root || sessNotFound != nil {
-			sess, _ = app.GetSession("")
+			sess, _ = app.GetSession("", ws)
 		}
 		if sess == nil {
 			abortWithError(c, err)
 			return
 		}
+		sessID := sess.ID
+		inst := sess.Instance
 		origin, _ := url.Parse("http://localhost:" + sess.Instance.Port())
 
 		if username, ok := c.Get("username"); ok {
@@ -104,7 +108,7 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		http.SetCookie(c.Writer, &cookieApp)
 		cookieSess := http.Cookie{
 			Name:  "appservr_session",
-			Value: sess.ID,
+			Value: sessID,
 			Path:  "/",
 		}
 		http.SetCookie(c.Writer, &cookieSess)
@@ -120,11 +124,11 @@ func (s *AppServer) CreateProxy() gin.HandlerFunc {
 		proxy.ModifyResponse = modifyResponse
 		proxy.ErrorHandler = errorHandler
 
-		ws := c.Request.Header.Get("Upgrade") == "websocket"
 		proxy.ServeHTTP(c.Writer, c.Request)
 		// In case of websocket connection, close session when socket is disconnected
 		if ws {
-			app.CloseSession(sess.ID)
+			app.CloseSession(sessID)
+			inst.SetUserCount(-1, true)
 		}
 	}
 }

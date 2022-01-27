@@ -8,6 +8,7 @@ import (
 
 	"github.com/appservR/appservR/models"
 	"github.com/appservR/appservR/modules/appserver"
+	"github.com/appservR/appservR/modules/appsource"
 	"github.com/appservR/appservR/modules/config"
 	"github.com/gin-gonic/gin"
 )
@@ -18,6 +19,7 @@ type AppController struct {
 	config    config.Config
 }
 
+// Create a new controller object
 func NewAppController(appModel models.AppModel, appServer *appserver.AppServer, config config.Config) *AppController {
 	return &AppController{
 		appModel:  appModel,
@@ -60,12 +62,14 @@ func (ctl *AppController) GetApp() gin.HandlerFunc {
 	}
 }
 
+// Form bindings for apps settings
 type AppSettings struct {
 	Name           string   `form:"appname" binding:"required"`
 	Path           string   `form:"path" binding:"required"`
 	Properties     []string `form:"properties[]"`
 	RestrictAccess int      `form:"restrictaccess"`
 	AllowedGroups  []string `form:"allowedgroups"`
+	AppSource      string   `form:"appsource"`
 	AppDir         string   `form:"appdir"`
 	Workers        int      `form:"workers"`
 }
@@ -92,19 +96,24 @@ func (ctl *AppController) UpdateApp() gin.HandlerFunc {
 			app := models.App{
 				Name:           appInfo.Name,
 				Path:           appInfo.Path,
+				AppSource:      appInfo.AppSource,
 				AppDir:         appInfo.AppDir,
 				Workers:        appInfo.Workers,
 				IsActive:       isActive,
 				RestrictAccess: appInfo.RestrictAccess,
 				AllowedGroups:  groups,
 			}
-			err = ctl.appModel.Save(app, appname)
+			appSource := appsource.NewAppSource(app, ctl.config, true)
+			err = appSource.Error()
 			if err == nil {
-				ctl.appServer.Update(appname, app)
-				res, err = ctl.buildAppTemplateData(app, c)
-				res["successMessage"] = "App updated successfuly."
-				c.HTML(http.StatusOK, "app.html", res)
-				return
+				err = ctl.appModel.Save(app, appname)
+				if err == nil {
+					ctl.appServer.Update(appname, app)
+					res, err = ctl.buildAppTemplateData(app, c)
+					res["successMessage"] = "App updated successfuly."
+					c.HTML(http.StatusOK, "app.html", res)
+					return
+				}
 			}
 		}
 		res = make(gin.H)
