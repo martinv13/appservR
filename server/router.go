@@ -10,7 +10,6 @@ import (
 	"github.com/appservR/appservR/middlewares"
 	"github.com/appservR/appservR/modules/appserver"
 	"github.com/appservR/appservR/modules/config"
-	"github.com/appservR/appservR/modules/ssehandler"
 	"github.com/appservR/appservR/modules/vfsdata"
 	"github.com/gin-gonic/gin"
 )
@@ -21,9 +20,8 @@ type AppRouter struct {
 }
 
 // Create the router instance
-func NewAppRouter(config config.Config, staticPaths *vfsdata.StaticPaths,
-	appServer *appserver.AppServer, msgBroker *ssehandler.MessageBroker,
-	appsCtl *controllers.AppController, usersCtl *controllers.UserController,
+func NewAppRouter(config config.Config, staticPaths *vfsdata.StaticPaths, appServer *appserver.AppServer,
+	appsCtl *controllers.AppController, statusCtl *controllers.StatusController, usersCtl *controllers.UserController,
 	groupsCtl *controllers.GroupController, authCtl *controllers.AuthController) (*AppRouter, error) {
 
 	mode := config.GetString("mode")
@@ -54,7 +52,7 @@ func NewAppRouter(config config.Config, staticPaths *vfsdata.StaticPaths,
 
 	admin := router.Group("/admin")
 	admin.Use(middlewares.AdminAuth())
-	admin = addAdminRoutes(admin, msgBroker, appsCtl, usersCtl, groupsCtl)
+	admin = addAdminRoutes(admin, appsCtl, statusCtl, usersCtl, groupsCtl)
 
 	router.Use(appServer.CreateProxy())
 
