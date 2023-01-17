@@ -20,7 +20,7 @@ type AppProxy struct {
 	sync.RWMutex
 	App             models.App                // the app settings
 	AppSource       appsource.AppSource       // the app R source files
-	StatusStream    *ssehandler.MessageBroker // global message broker for SSEvents
+	StatusBroker    *ssehandler.MessageBroker // global message broker for SSEvents
 	Instances       map[string]*Instance      // running instances of the app
 	Sessions        map[string]*Session       // session started by users
 	SessionsGCTimer *time.Timer               // timer to garbage collect sessions
@@ -32,7 +32,7 @@ func NewAppProxy(app models.App, msgBroker *ssehandler.MessageBroker, config con
 	p := &AppProxy{
 		App:             app,
 		AppSource:       appsource.NewAppSource(app, config, false),
-		StatusStream:    msgBroker,
+		StatusBroker:    msgBroker,
 		Instances:       map[string]*Instance{},
 		Sessions:        map[string]*Session{},
 		SessionsGCTimer: time.NewTimer(time.Second * time.Duration(30)),
@@ -297,5 +297,5 @@ func (p *AppProxy) ReportStatus() {
 		"appName": p.App.Name,
 		"value":   msg,
 	})
-	p.StatusStream.Message <- string(msgData)
+	p.StatusBroker.Message <- string(msgData)
 }

@@ -14,18 +14,18 @@ import (
 // A struct to store all running apps objects
 type AppServer struct {
 	sync.RWMutex
-	broker     *ssehandler.MessageBroker
-	config     config.Config
-	appsByName map[string]*AppProxy
-	byPath     []*AppProxy
+	StatusBroker *ssehandler.MessageBroker
+	config       config.Config
+	appsByName   map[string]*AppProxy
+	byPath       []*AppProxy
 }
 
 // Create a new struct to hold running app proxies
-func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker, config config.Config) (*AppServer, error) {
+func NewAppServer(appModel models.AppModel, config config.Config) (*AppServer, error) {
 	appServer := &AppServer{
-		broker:     msgBroker,
-		appsByName: make(map[string]*AppProxy),
-		config:     config,
+		StatusBroker: ssehandler.NewMessageBroker(),
+		appsByName:   make(map[string]*AppProxy),
+		config:       config,
 	}
 	apps, err := appModel.All()
 	if err != nil {
@@ -33,7 +33,7 @@ func NewAppServer(appModel models.AppModel, msgBroker *ssehandler.MessageBroker,
 	}
 	appServer.byPath = make([]*AppProxy, len(apps))
 	for i := range apps {
-		app, err := NewAppProxy(apps[i], msgBroker, config)
+		app, err := NewAppProxy(apps[i], appServer.StatusBroker, config)
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +51,7 @@ func (s *AppServer) Update(appName string, app models.App) error {
 	appProxy, ok := s.appsByName[appName]
 	if !ok {
 		// new app
-		appProxy, err := NewAppProxy(app, s.broker, s.config)
+		appProxy, err := NewAppProxy(app, s.StatusBroker, s.config)
 		if err != nil {
 			return err
 		}
