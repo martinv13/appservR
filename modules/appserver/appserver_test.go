@@ -50,6 +50,14 @@ func newTestAppServer(t testing.TB, apps ...models.App) *AppServer {
 	if err != nil {
 		t.Fatalf("NewAppServer failed: %v", err)
 	}
+	// NewAppServer starts an AppProxy (and, for active apps, real Instance
+	// subprocesses) per app; nothing else stops them, so every caller must
+	// clean up or they leak processes past the test.
+	t.Cleanup(func() {
+		for _, p := range s.appsByName {
+			p.Cleanup()
+		}
+	})
 	return s
 }
 
