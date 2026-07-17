@@ -3,6 +3,9 @@
 //
 // Invocation mirrors modules/appserver/instance.go exactly: argv[1] is "-e"
 // and argv[2] is the R expression string, from which the port is extracted.
+// The "Listening on" line is written to stderr, like real R's message()-based
+// logging, since Instance.Start reads stderr before stdout and would never
+// observe it on stdout while the process is actually running.
 // Behavior can be steered per test by dropping marker files into the process
 // working directory (which Instance.Start sets to the app's source dir):
 //
@@ -86,9 +89,11 @@ func main() {
 		})
 	}
 
-	// Printed only once the listener is up, matching real Shiny's behavior of
-	// logging "Listening on http://host:port" right before it starts serving.
-	fmt.Println("Listening on http://127.0.0.1:" + port)
+	// Printed to stderr, matching real R's message()-based logging that Shiny
+	// uses for this line. Instance.Start reads stderr before stdout, so
+	// writing this to stdout would never be observed while the process is
+	// actually running (only once it exits and stdout's pipe finally drains).
+	fmt.Fprintln(os.Stderr, "Listening on http://127.0.0.1:"+port)
 
 	server.Serve(ln)
 }

@@ -92,6 +92,8 @@ func (s *AppServer) Delete(appName string) error {
 
 // Returns the status of all apps as a map indexed with app names
 func (s *AppServer) GetAllStatus() map[string]interface{} {
+	s.RLock()
+	defer s.RUnlock()
 	status := map[string]interface{}{}
 	for n, app := range s.appsByName {
 		status[n] = app.GetStatus(false)
@@ -101,6 +103,8 @@ func (s *AppServer) GetAllStatus() map[string]interface{} {
 
 // Returns the status of a given app
 func (s *AppServer) GetStatus(appName string) (map[string]interface{}, error) {
+	s.RLock()
+	defer s.RUnlock()
 	app, ok := s.appsByName[appName]
 	if !ok {
 		return nil, errors.New("app not found")
