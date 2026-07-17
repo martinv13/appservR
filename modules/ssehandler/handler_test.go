@@ -184,14 +184,40 @@ func TestMultipleClientsAllReceiveBroadcast(t *testing.T) {
 
 	broker.Message <- "fan-out"
 
-	for name, c := range map[string]chan string{"A": clientA, "B": clientB} {
+	// listen() broadcasts to each client with a blocking, sequential send in
+	// map-iteration order (unspecified, and randomized per run). Reading
+	// clientA then clientB sequentially here would deadlock until timeout
+	// whenever the broker happens to pick the opposite order (it blocks
+	// sending to whichever client isn't being read yet), so both must be
+	// read concurrently regardless of that order.
+	type result struct{ name, msg string }
+	results := make(chan result, 2)
+	go func() {
 		select {
-		case msg := <-c:
-			if msg != "fan-out" {
-				t.Errorf("client %s: expected %q, got %q", name, "fan-out", msg)
-			}
+		case msg := <-clientA:
+			results <- result{"A", msg}
 		case <-time.After(shortWait):
-			t.Fatalf("client %s: timed out waiting for broadcast", name)
+			results <- result{"A", ""}
 		}
+	}()
+	go func() {
+		select {
+		case msg := <-clientB:
+			results <- result{"B", msg}
+		case <-time.After(shortWait):
+			results <- result{"B", ""}
+		}
+	}()
+
+	seen := map[string]string{}
+	for i := 0; i < 2; i++ {
+		r := <-results
+		seen[r.name] = r.msg
+	}
+	if seen["A"] != "fan-out" {
+		t.Errorf("client A: expected %q, got %q", "fan-out", seen["A"])
+	}
+	if seen["B"] != "fan-out" {
+		t.Errorf("client B: expected %q, got %q", "fan-out", seen["B"])
 	}
 }

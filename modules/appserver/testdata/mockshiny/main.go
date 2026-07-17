@@ -85,6 +85,13 @@ func main() {
 
 	if ms := readIntMarker(cwd, "crash_after_ms"); ms > 0 {
 		time.AfterFunc(time.Duration(ms)*time.Millisecond, func() {
+			// Self-removing: a restarted Instance re-reads this marker on
+			// each new process start, so leaving it in place would crash
+			// forever. Instance.Stop doesn't cancel an already-scheduled
+			// restart timer (see CLAUDE.md's known issues), so an infinite
+			// crash loop risks leaking an orphaned process past the test
+			// that triggered it; a one-shot crash keeps that window small.
+			os.Remove(filepath.Join(cwd, "crash_after_ms"))
 			os.Exit(1)
 		})
 	}
