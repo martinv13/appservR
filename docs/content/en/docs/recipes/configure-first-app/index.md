@@ -3,7 +3,7 @@ title: "Configure your first app"
 description: "Walkthrough of the app configuration form: name, path, access control, source directory, and workers."
 lead: "Walkthrough of the app configuration form: name, path, access control, source directory, and workers."
 date: 2026-07-20T00:00:00+00:00
-lastmod: 2026-07-20T00:00:00+00:00
+lastmod: 2026-07-20T01:00:00+00:00
 draft: false
 images: []
 menu:
@@ -35,7 +35,9 @@ AppservR currently only supports a **local or network directory** as an app's so
 
 ## Serving
 
-**Number of process workers** sets how many separate `Rscript` processes AppservR keeps running for this app. Each user session is bound to one worker for the length of their session, so more workers mean more users can be served in parallel. Since Shiny apps typically hold their state in server-side R process memory, this is also what lets AppservR scale a single app beyond what one R process could handle alone.
+**Number of process workers** sets how many separate `Rscript` processes AppservR keeps running for this app, side by side. A user session is bound to one worker for its whole duration, but a single worker serves multiple sessions at once: new sessions are routed to whichever running worker currently has the fewest connected users. Sharing workers this way is what makes AppservR resource-efficient — most apps don't need one process per user.
+
+How many workers to configure depends less on how many users you expect and more on what the app actually does once someone's connected. R itself is single-threaded, so while a worker is busy computing something for one of its sessions, every other session sharing that worker has to wait its turn. For apps that respond quickly (most dashboards and interactive tools), a handful of sessions can comfortably share one worker. For apps with long-running CPU-bound operations in the main reactive context, and that don't use an async pattern (the `future`/`promises` packages) to run that work in the background, one slow computation blocks every other session on that worker, so you'll want a worker count closer to your expected number of concurrent users.
 
 ## After saving
 
