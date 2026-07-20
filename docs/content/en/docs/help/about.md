@@ -17,11 +17,13 @@ toc: true
 
 There are already some alternatives to deploy R Shiny apps:
 
-* [shinyapps.io](https://shinyapps.io)
-* [Shiny server](https://www.rstudio.com/products/shiny/shiny-server/)
-* [ShinyProxy](https://www.shinyproxy.io/)
+* [shinyapps.io](https://shinyapps.io) is Posit's own hosted service: no server to manage at all, but you don't control the environment and usage is metered.
+* [Shiny Server](https://www.rstudio.com/products/shiny/shiny-server/) (the free, open-source edition) is self-hosted like AppservR, but Linux-only, and has no built-in authentication (that's a Shiny Server Pro feature).
+* [ShinyProxy](https://www.shinyproxy.io/) runs each user session in its own Docker container, which is powerful for isolation and scaling, but means taking on a Docker deployment to get there.
 
 and maybe some others.
+
+AppservR's trade-off is different: a single cross-platform binary with authentication built in and no container runtime required, at the cost of some of the isolation and scaling headroom those other tools offer.
 
 However, working in an organization where data is not the primary focus and with limited IT admin resources (100% Windows!), I found no easy way to share Shiny apps internally as proof of concept.
 
