@@ -250,6 +250,8 @@ func (p *AppProxy) DeleteInstance(ID string) {
 
 // Return app status info as a map
 func (app *AppProxy) GetStatus(detailed bool) map[string]interface{} {
+	app.RLock()
+	defer app.RUnlock()
 	nbRunning := 0
 	nbPhasingOut := 0
 	userCount := 0
