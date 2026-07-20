@@ -1,0 +1,87 @@
+# Meta Data for SEO
+
+## Homepage
+title = "AppservR"
+titleSeparator = "-"
+titleAddition = "Deploying R apps the easy way"
+description = "AppservR is an open-source program to deploy R Shiny apps on Windows and Linux easily."
+
+## Documentation
+# docsVersion = "0.3"
+
+## Open Graph
+# No logo/social preview image yet, so this is intentionally left empty rather than
+# pointing at a placeholder image.
+images = []
+ogLocale = "en_US"
+domainTLD = "appservR.github.io"
+titleHome = "AppservR"
+
+## JSON-LD
+# schemaType = "Person"
+schemaType = "Organization"
+schemaName = "AppservR"
+schemaAuthor = "Martin Vergier"
+schemaAuthorTwitter = ""
+schemaAuthorLinkedIn = ""
+schemaAuthorGitHub = ""
+schemaLocale = "en-US"
+# No logo yet, see the "images" note above.
+schemaLogo = ""
+schemaLogoWidth = 512
+schemaLogoHeight = 512
+schemaImage = ""
+schemaImageWidth = 1280
+schemaImageHeight = 640
+schemaTwitter = ""
+schemaLinkedIn = ""
+schemaGitHub = "https://github.com/appservR/appservR"
+schemaSection = "blog"
+
+## Sitelinks Search Box
+siteLinksSearchBox = false
+
+## Chrome Browser
+themeColor = "#fff"
+
+# Images
+quality = 85
+bgColor = "#fff"
+landscapePhotoWidths = [900, 800, 700, 600, 500]
+portraitPhotoWidths = [800, 700, 600, 500]
+lqipWidth = "20x"
+smallLimit = "300"
+
+# Footer
+footer = "Powered by <a href=\"https://gohugo.io/\">Hugo</a> and <a href=\"https://getdoks.org/\">Doks</a>, deployed on <a href=\"https://pages.github.com/\">GitHub Pages</a>"
+
+# Feed
+copyRight = "Copyright (c) 2022 Martin Vergier"
+
+# Alert
+alert = false
+alertDismissable = true
+# alertText = "Introducing the Doks child theme, several DX + UX updates, and more! <a class=\"alert-link stretched-link\" href=\"https://getdoks.org/blog/doks-v0.2/\" target=\"_blank\" rel=\"noopener\">Check out Doks v0.2</a>"
+alertText = "Introducing the Doks child theme, several DX + UX updates, and more! <a class=\"alert-link stretched-link\" href=\"https://getdoks.org/blog/doks-v0.2/\">Check out Doks v0.2</a>"
+
+# Edit Page
+# repoHost [Github | Gitea | GitLab] is used for building the edit link based on git hoster
+repoHost = "GitHub"
+#repoHost = "Gitea"
+docsRepo = "https://github.com/appservR/appservR"
+docsRepoBranch = "main"
+editPage = false
+
+[options]
+  lazySizes = true
+  clipBoard = true
+  instantPage = true
+  flexSearch = true
+  darkMode = true
+  bootStrapJs = true
+  breadCrumb = false
+  highLight = true
+  kaTex = false
+  collapsibleSidebar = true
+  multilingualMode = false
+  docsVersioning = false
