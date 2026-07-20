@@ -73,13 +73,19 @@ func TestValidateTokenRejectsTamperedSignature(t *testing.T) {
 	user := models.User{Username: "carol"}
 	tokenString := GenerateToken(user)
 
-	// Flip the last character of the signature segment.
-	tampered := tokenString[:len(tokenString)-1]
-	if tokenString[len(tokenString)-1] == 'a' {
+	// Flip a character in the middle of the signature segment. The very
+	// last base64url character of a 256-bit HMAC-SHA256 signature encodes
+	// 2 bits of padding slack that don't affect the decoded bytes, so
+	// flipping it there can non-deterministically fail to actually change
+	// the signature; a middle character doesn't have that problem.
+	i := len(tokenString) / 2
+	tampered := tokenString[:i]
+	if tokenString[i] == 'a' {
 		tampered += "b"
 	} else {
 		tampered += "a"
 	}
+	tampered += tokenString[i+1:]
 
 	token, err := ValidateToken(tampered)
 	if err == nil && token.Valid {

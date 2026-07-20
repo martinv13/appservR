@@ -2,9 +2,9 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 
-	"github.com/kardianos/osext"
 	"github.com/kardianos/service"
 	"github.com/spf13/viper"
 )
@@ -58,8 +58,8 @@ func NewConfigViper(flags RunFlags) (*ConfigViper, error) {
 	c.v = viper.New()
 
 	if !service.Interactive() {
-		exePath, _ := osext.ExecutableFolder()
-		c.executableFolder = exePath
+		exePath, _ := os.Executable()
+		c.executableFolder = filepath.Dir(exePath)
 	}
 
 	c.v.SetDefault("server.port", 8080)
