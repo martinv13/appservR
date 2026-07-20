@@ -21,7 +21,7 @@ AppservR can be downloaded from [GitHub](https://github.com/appservR/appservR/re
 <p><a class="btn btn-primary" href="https://github.com/appservR/appservR/releases/latest">Download</a></p>
 {{< /rawhtml >}}
 
-Our one-page Quick Start tutorial will help you getting started. [Quick Start →]({{< relref "quick-start" >}})
+Our one-page Quick Start tutorial will help you get started. [Quick Start →]({{< relref "quick-start" >}})
 
 ## Go further
 

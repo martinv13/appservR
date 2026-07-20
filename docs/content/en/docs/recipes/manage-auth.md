@@ -31,7 +31,7 @@ This setting can be found in each app page in the admin interface.
 
 ## Get authenticated user from your app
 
-You R app can be aware of the authentication infos for the current user, if any. This information is accessible in the HTTP headers sent to your app by the AppservR proxy.
+Your R app can be aware of the authentication infos for the current user, if any. This information is accessible in the HTTP headers sent to your app by the AppservR proxy.
 
 The default app (*Old Faithful Geyser Data*) demonstrates how to use this information to identify the user currently logged in.
 

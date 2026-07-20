@@ -15,13 +15,13 @@ toc: true
 
 ## Requirements
 
-AppservR runs your Shiny apps using your system installation of R. You need to have R installed on your system to use it. You will also need the ```shiny``` package and all other R package your apps need. [Learn more about Shiny →](https://shiny.rstudio.com/)
+AppservR runs your Shiny apps using your system installation of R. You need to have R installed on your system to use it. You will also need the `shiny` package and all other R packages your apps need. [Learn more about Shiny →](https://shiny.rstudio.com/)
 
 {{< alert icon="💡" text="Make sure first that you are able to run your Shiny app properly using R/Rstudio to check that all required packages are installed." />}}
 
 ## Download & Install
 
-Get the latest AppservR executable for your platform [on Github](https://github.com/appservR/appservR/releases/latest). You will need to chose the download option suited to your platform.
+Get the latest AppservR executable for your platform [on Github](https://github.com/appservR/appservR/releases/latest). You will need to choose the download option suited to your platform.
 
 {{< rawhtml >}}
 <p><a class="btn btn-primary" href="https://github.com/appservR/appservR/releases/latest">Download</a></p>
@@ -43,7 +43,7 @@ Go to [http://localhost:8080](http://localhost:8080). You should see a running s
 
 ## Configure
 
-When you run AppservR for the first time, it will create in the the same directory as the executable file:
+When you run AppservR for the first time, it will create in the same directory as the executable file:
 
 * a `config.yml` configuration file,
 * an `apps` folder containing a sample Shiny app,
@@ -65,7 +65,7 @@ You will first need to register as a user via the login > signup form. The first
 
 After you have created your admin account and successfully logged in, you can configure existing or new Shiny apps at [http://localhost:8080/admin/apps](http://localhost:8080/admin/apps). Several apps can live on the same server and be accessed using the path you configure.
 
-On each app configuration page you can see also the console output of the R session used to run your app, which can be useful to troubleshoot issues.
+On each app configuration page you can also see the console output of the R session used to run your app, which can be useful to troubleshoot issues.
 
 ## Go further
 
