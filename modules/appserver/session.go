@@ -3,7 +3,7 @@ package appserver
 import (
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 type Session struct {
@@ -15,7 +15,7 @@ type Session struct {
 
 func NewSession(app *AppProxy) *Session {
 	sess := &Session{
-		ID:         uuid.NewV4().String(),
+		ID:         uuid.New().String(),
 		LastActive: time.Now().Unix(),
 		app:        app,
 	}

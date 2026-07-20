@@ -12,7 +12,7 @@ import (
 
 	"github.com/appservR/appservR/modules/config"
 	"github.com/appservR/appservR/modules/portspool"
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 type Instance struct {
@@ -48,7 +48,7 @@ var instStatus = struct {
 // Create a new instance of the app
 func NewInstance(appName string, appDir string, conf config.Config) *Instance {
 	return &Instance{
-		ID:      uuid.NewV4().String()[0:6],
+		ID:      uuid.New().String()[0:6],
 		appName: appName,
 		appDir:  appDir,
 		config:  conf,

@@ -8,10 +8,10 @@ import (
 
 	"github.com/appservR/appservR/models"
 	"github.com/golang-jwt/jwt/v5"
-    uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
-var randomSecret = uuid.NewV4().String()
+var randomSecret = uuid.New().String()
 
 func getSecretKey() string {
 	secret := os.Getenv("APPSERVR_AUTH_SECRET")
