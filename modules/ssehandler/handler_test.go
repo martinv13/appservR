@@ -36,8 +36,8 @@ func TestControllerStreamsBroadcastMessages(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	if ct := resp.Header.Get("Content-Type"); ct != "text/event-stream" {
-		t.Errorf("expected Content-Type text/event-stream, got %q", ct)
+	if ct := resp.Header.Get("Content-Type"); ct != "text/event-stream;charset=utf-8" {
+		t.Errorf("expected Content-Type text/event-stream;charset=utf-8, got %q", ct)
 	}
 
 	reader := bufio.NewReader(resp.Body)
