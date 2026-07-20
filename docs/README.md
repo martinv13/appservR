@@ -5,6 +5,8 @@ Hugo source for the [documentation website](https://appservR.github.io), built w
 
 ## Developing locally
 
+From the repository root:
+
 ```sh
 cd docs
 npm install
