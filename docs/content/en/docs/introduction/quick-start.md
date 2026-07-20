@@ -15,7 +15,7 @@ toc: true
 
 ## Requirements
 
-AppservR runs your Shiny apps using your system installation of R. You need to have R installed on your system to use it. You will also need the `shiny` package and all other R packages your apps need. [Learn more about Shiny →](https://shiny.rstudio.com/)
+AppservR runs your Shiny apps using your system installation of R. You need to have R installed on your system to use it. You will also need the `shiny` package and all other R packages your apps need. [Learn more about Shiny →](https://shiny.posit.co/)
 
 {{< alert icon="💡" text="Make sure first that you are able to run your Shiny app properly using R/Rstudio to check that all required packages are installed." />}}
 

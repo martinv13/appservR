@@ -10,29 +10,32 @@ description = "AppservR is an open-source program to deploy R Shiny apps on Wind
 # docsVersion = "0.3"
 
 ## Open Graph
-images = ["doks.png"]
+# No logo/social preview image yet, so this is intentionally left empty rather than
+# pointing at a placeholder image.
+images = []
 ogLocale = "en_US"
-domainTLD = "doks.netlify.app"
-titleHome = "Doks Theme"
+domainTLD = "appservR.github.io"
+titleHome = "AppservR"
 
 ## JSON-LD
 # schemaType = "Person"
 schemaType = "Organization"
-schemaName = "Doks"
-schemaAuthor = "Henk Verlinde"
-schemaAuthorTwitter = "https://twitter.com/henkverlinde"
-schemaAuthorLinkedIn = "https://www.linkedin.com/in/henkverlinde/"
-schemaAuthorGitHub = "https://github.com/h-enk"
+schemaName = "AppservR"
+schemaAuthor = "Martin Vergier"
+schemaAuthorTwitter = ""
+schemaAuthorLinkedIn = ""
+schemaAuthorGitHub = ""
 schemaLocale = "en-US"
-schemaLogo = "logo-doks.png"
+# No logo yet, see the "images" note above.
+schemaLogo = ""
 schemaLogoWidth = 512
 schemaLogoHeight = 512
-schemaImage = "doks.png"
+schemaImage = ""
 schemaImageWidth = 1280
 schemaImageHeight = 640
-schemaTwitter = "https://twitter.com/getdoks"
+schemaTwitter = ""
 schemaLinkedIn = ""
-schemaGitHub = "https://github.com/h-enk/doks"
+schemaGitHub = "https://github.com/appservR/appservR"
 schemaSection = "blog"
 
 ## Sitelinks Search Box
@@ -50,10 +53,10 @@ lqipWidth = "20x"
 smallLimit = "300"
 
 # Footer
-footer = "Powered by <a href=\"https://www.netlify.com/\">Netlify</a>, <a href=\"https://gohugo.io/\">Hugo</a>, and <a href=\"https://getdoks.org/\">Doks</a>"
+footer = "Powered by <a href=\"https://gohugo.io/\">Hugo</a> and <a href=\"https://getdoks.org/\">Doks</a>, deployed on <a href=\"https://pages.github.com/\">GitHub Pages</a>"
 
 # Feed
-copyRight = "Copyright (c) 2020-2021 Henk Verlinde"
+copyRight = "Copyright (c) 2022 Martin Vergier"
 
 # Alert
 alert = false
