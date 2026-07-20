@@ -5,34 +5,17 @@ before:
     - go mod tidy
     - go generate ./...
 builds:
-  - 
-    id: "windows_i686"
-    env:
-      - CGO_ENABLED=1
-      - CXX=i686-w64-mingw32-g++ 
-      - CC=i686-w64-mingw32-gcc
+  - env:
+      - CGO_ENABLED=0
     goos:
       - windows
-    goarch:
-      - 386
-  - 
-    id: "windows_64"
-    env:
-      - CGO_ENABLED=1
-      - CXX=x86_64-w64-mingw32-g++ 
-      - CC=x86_64-w64-mingw32-gcc
-    goos:
-      - windows
-    goarch:
-      - amd64
-  - 
-    id: "linux"
-    env:
-      - CGO_ENABLED=1
-    goos:
       - linux
     goarch:
+      - 386
       - amd64
+    ignore:
+      - goos: linux
+        goarch: 386
 archives:
   - name_template: >-
       {{ .ProjectName }}_{{ .Version }}_
