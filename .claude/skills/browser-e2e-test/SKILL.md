@@ -25,7 +25,15 @@ check both.
    mock-shiny instance to come up, then makes a request to the app's own
    path (not `/admin/*`) and checks the response really came from the
    proxied backend - the part that actually proves the reverse proxy works.
-4. Tears everything down (server, spawned mock-shiny children, scratch dir).
+4. Creates *two more* active apps at once, on two different paths
+   (`/appone` and `/apptwo`), and confirms each is independently reachable
+   and correctly routed - a request to one path must never be answered by
+   the other app's instance, including on repeated requests. Running
+   several apps side by side is a core feature (that's the whole point of
+   `AppServer.byPath`/`GetApp`'s path matching), and a routing bug here
+   would only ever show up with more than one app registered at once - the
+   single-app test in step 3 can't catch it.
+5. Tears everything down (server, spawned mock-shiny children, scratch dir).
 
 ## Running it
 
@@ -109,6 +117,13 @@ actual Chrome binary — do not append a sub-path to it) and
   it's not just whatever `drive.js` creates. `teardown.sh`'s pattern-based
   kill handles this fine, but don't be surprised to see mock-shiny PIDs
   before the driver script has created anything.
+- **The two-app test checks the port, not just the status code.** Each
+  mock-shiny instance reports its own port in the response body
+  (`mock-shiny-port=<port>`) and the appname it was told via the forwarded
+  `appservR-appname` header (`appname=<name>`). A 200 response alone
+  doesn't prove `/appone/` was actually routed to appone's instance rather
+  than apptwo's - only checking `appname=appone` in the body does. Don't
+  weaken this back to a bare status-code check.
 - **Signing up the same username twice fails (expected).** If a previous
   run's scratch dir/DB somehow leaked into this one (it shouldn't — each
   `setup.sh` call gets a fresh `mktemp -d` and DB), signup returns 500

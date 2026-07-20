@@ -38,7 +38,12 @@ function assert(cond, msg) {
 // rather than the admin UI, is what actually proves a request travels
 // through AppServer.CreateProxy() to a live Instance - the admin pages only
 // prove the app *record* exists, not that it's really running and reachable.
-async function waitForProxiedApp(page, url, timeoutMs) {
+//
+// expectedAppName is checked against the backend's own appname= field (set
+// from the forwarded appservR-appname header), not just "some app
+// responded" - with two apps live at once, a wrong-app match here would be
+// exactly the kind of path-routing bug this test exists to catch.
+async function waitForProxiedApp(page, url, expectedAppName, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   let lastBody = '';
   let lastStatus = 0;
@@ -47,7 +52,7 @@ async function waitForProxiedApp(page, url, timeoutMs) {
       const resp = await page.request.get(url, { maxRedirects: 5 });
       lastStatus = resp.status();
       lastBody = await resp.text();
-      if (lastStatus === 200 && lastBody.includes('mock-shiny-port=')) {
+      if (lastStatus === 200 && lastBody.includes(`appname=${expectedAppName}`)) {
         return lastBody;
       }
     } catch (e) {
@@ -56,8 +61,14 @@ async function waitForProxiedApp(page, url, timeoutMs) {
     await new Promise(r => setTimeout(r, 300));
   }
   throw new Error(
-    `timed out waiting for proxied app at ${url}; last status=${lastStatus} body=${lastBody.slice(0, 300)}`
+    `timed out waiting for proxied app '${expectedAppName}' at ${url}; last status=${lastStatus} body=${lastBody.slice(0, 300)}`
   );
+}
+
+function extractPort(body) {
+  const m = body.match(/mock-shiny-port=(\d+)/);
+  if (!m) throw new Error(`could not find mock-shiny-port= in body: ${body.slice(0, 300)}`);
+  return m[1];
 }
 
 (async () => {
@@ -186,9 +197,8 @@ async function waitForProxiedApp(page, url, timeoutMs) {
   await shot(page, 'proxy-app-created');
   assert((await page.textContent('body')).includes('successfuly'), 'active app create shows success message');
 
-  const proxyBody = await waitForProxiedApp(page, `${BASE}/proxytestapp/`, 15000);
+  const proxyBody = await waitForProxiedApp(page, `${BASE}/proxytestapp/`, 'proxytestapp', 15000);
   assert(proxyBody.includes('mock-shiny-port='), 'proxied request body identifies the mock backend port');
-  assert(proxyBody.includes('appname=proxytestapp'), 'appservR-appname header was forwarded to the backend');
   console.log('proxied app response:', proxyBody.trim());
 
   // Sanity: hitting the admin-authenticated page as the SAME browser
@@ -205,6 +215,65 @@ async function waitForProxiedApp(page, url, timeoutMs) {
   assert((await page.textContent('body')).includes('Listening on'), 'app detail page shows the running instance\'s console output');
 
   await page.goto(`${BASE}/admin/apps/proxytestapp/delete`);
+  await page.waitForLoadState('domcontentloaded');
+
+  // ================= Two simultaneously-live apps on different paths =================
+  // Running several independent Shiny apps side by side, each on its own
+  // path, is a core feature (see AppServer.byPath / GetApp's path matching)
+  // - it's not enough for one app to proxy correctly in isolation, since a
+  // path-matching bug (e.g. a prefix mismatch, or a session cookie from one
+  // app leaking into another) would only show up with more than one app
+  // registered at once.
+  async function createActiveApp(name, appPath) {
+    await page.goto(`${BASE}/admin/apps/new`);
+    await page.fill('#appname', name);
+    await page.fill('#path', appPath);
+    await page.fill('#appdir', path.join(SCRATCH, 'dummyapp'));
+    await page.check('#active');
+    await page.fill('#workers', '1');
+    await page.click('button.btn-success');
+    await page.waitForLoadState('domcontentloaded');
+    assert((await page.textContent('body')).includes('successfuly'), `${name} create shows success message`);
+  }
+
+  await createActiveApp('appone', '/appone');
+  await createActiveApp('apptwo', '/apptwo');
+  await shot(page, 'two-apps-created');
+
+  // Both apps list on the admin page at the same time.
+  await page.goto(`${BASE}/admin/apps`);
+  await page.waitForSelector('#apps-row');
+  const twoAppsListText = await page.textContent('#apps-row');
+  assert(twoAppsListText.includes('Appone'), 'apps list shows appone alongside apptwo');
+  assert(twoAppsListText.includes('Apptwo'), 'apps list shows apptwo alongside appone');
+  await shot(page, 'two-apps-list');
+
+  // Each becomes independently reachable and correctly identifies itself -
+  // this is the crux of the test: request /appone/ must be routed to
+  // appone's instance and report appname=appone, never apptwo's, and
+  // vice versa, even though both are live at the same time.
+  const bodyOneFirst = await waitForProxiedApp(page, `${BASE}/appone/`, 'appone', 15000);
+  const bodyTwoFirst = await waitForProxiedApp(page, `${BASE}/apptwo/`, 'apptwo', 15000);
+  const portOneFirst = extractPort(bodyOneFirst);
+  const portTwoFirst = extractPort(bodyTwoFirst);
+  assert(portOneFirst !== portTwoFirst, 'appone and apptwo are served by two distinct instances/ports, not the same one');
+  console.log('appone response:', bodyOneFirst.trim());
+  console.log('apptwo response:', bodyTwoFirst.trim());
+
+  // Hit both paths again, interleaved, to rule out routing state that only
+  // gets confused on a second request (e.g. a session cookie from one app
+  // bleeding into the other's session lookup) - each should keep answering
+  // as itself, from the same port as before.
+  const bodyOneSecond = await waitForProxiedApp(page, `${BASE}/appone/`, 'appone', 5000);
+  const bodyTwoSecond = await waitForProxiedApp(page, `${BASE}/apptwo/`, 'apptwo', 5000);
+  assert(extractPort(bodyOneSecond) === portOneFirst, 'appone still served by its own instance on the second request');
+  assert(extractPort(bodyTwoSecond) === portTwoFirst, 'apptwo still served by its own instance on the second request');
+
+  await shot(page, 'two-apps-verified');
+
+  await page.goto(`${BASE}/admin/apps/appone/delete`);
+  await page.waitForLoadState('domcontentloaded');
+  await page.goto(`${BASE}/admin/apps/apptwo/delete`);
   await page.waitForLoadState('domcontentloaded');
 
   console.log('CONSOLE_ERRORS:', JSON.stringify(consoleErrors));
