@@ -16,24 +16,29 @@ check both.
 1. Builds the `appservR` binary and the `modules/appserver/testdata/mockshiny`
    test helper (a small Go program standing in for
    `Rscript -e "shiny::runApp(...)"` - see that package's doc comment for
-   details), copies the real `templates/`/`assets/` next to the binary, and
-   launches the server in the background against a scratch SQLite DB.
-2. Signs up as the first user (becomes admin automatically), logs in, and
+   details), copies the real `templates/`/`assets/` next to the binary,
+   injects a marker into the on-disk copy of `templates/shared/footer.html`,
+   and launches the server in the background against a scratch SQLite DB.
+2. Loads the signup page first and asserts that marker is actually rendered
+   - proving `modules/vfsdata`'s `HybridFileSystem` still prefers a local
+   on-disk template override over the `go:embed`-bundled copy, i.e. an admin
+   can still hand-edit templates next to the binary without rebuilding.
+3. Signs up as the first user (becomes admin automatically), logs in, and
    exercises the admin UI's create/list/view/delete flow for an app, a user,
    and a group - through the real templates, not test stubs.
-3. Creates a *second*, active app with a real worker, waits for its
+4. Creates a *second*, active app with a real worker, waits for its
    mock-shiny instance to come up, then makes a request to the app's own
    path (not `/admin/*`) and checks the response really came from the
    proxied backend - the part that actually proves the reverse proxy works.
-4. Creates *two more* active apps at once, on two different paths
+5. Creates *two more* active apps at once, on two different paths
    (`/appone` and `/apptwo`), and confirms each is independently reachable
    and correctly routed - a request to one path must never be answered by
    the other app's instance, including on repeated requests. Running
    several apps side by side is a core feature (that's the whole point of
    `AppServer.byPath`/`GetApp`'s path matching), and a routing bug here
    would only ever show up with more than one app registered at once - the
-   single-app test in step 3 can't catch it.
-5. Tears everything down (server, spawned mock-shiny children, scratch dir).
+   single-app test in step 4 can't catch it.
+6. Tears everything down (server, spawned mock-shiny children, scratch dir).
 
 ## Running it
 
