@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/appservR/appservR/models"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
     uuid "github.com/satori/go.uuid"
 )
 
@@ -25,7 +25,7 @@ type authCustomClaims struct {
 	Username          string `json:"username"`
 	DisplayedUsername string `json:"name"`
 	Groups            string `json:"groups"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 func GenerateToken(user models.User) string {
@@ -37,10 +37,10 @@ func GenerateToken(user models.User) string {
 		user.Username,
 		user.DisplayedName,
 		strings.Join(groups, ","),
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 			Issuer:    "AppservR",
-			IssuedAt:  time.Now().Unix(),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

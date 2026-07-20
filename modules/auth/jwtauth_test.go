@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/appservR/appservR/models"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func TestGenerateAndValidateToken(t *testing.T) {
@@ -92,10 +92,10 @@ func TestValidateTokenRejectsExpiredToken(t *testing.T) {
 		Username:          "dave",
 		DisplayedUsername: "Dave",
 		Groups:            "",
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(-time.Minute).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Minute)),
 			Issuer:    "AppservR",
-			IssuedAt:  time.Now().Add(-time.Hour).Unix(),
+			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-time.Hour)),
 		},
 	}
 	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -113,8 +113,8 @@ func TestValidateTokenRejectsExpiredToken(t *testing.T) {
 func TestValidateTokenRejectsUnexpectedSigningMethod(t *testing.T) {
 	claims := &authCustomClaims{
 		Username: "eve",
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute).Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
 		},
 	}
 	tok := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
