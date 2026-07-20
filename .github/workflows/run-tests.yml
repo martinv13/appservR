@@ -13,7 +13,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.17.x]
+        go-version: [1.24.x]
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -24,7 +24,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     # windows-latest's bundled MinGW-w64 GCC now targets the UCRT runtime and
-    # no longer exports __iob_func, which Go 1.17's cgo glue (needed to build
+    # no longer exports __iob_func, which older Go cgo glue (needed to build
     # github.com/mattn/go-sqlite3, and everything that imports models/) still
     # requires from the older MSVCRT runtime. Install a GCC build that still
     # targets MSVCRT and put it first on PATH so cgo links against it instead.

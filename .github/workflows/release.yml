@@ -16,14 +16,14 @@ jobs:
         run: sudo apt-get install gcc-multilib g++-multilib gcc-mingw-w64
       -
         name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       -
         name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.17
+          go-version: 1.24.x
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
