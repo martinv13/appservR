@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - release/**
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,21 +13,19 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - name: Install dependencies
-        run: sudo apt-get install gcc-multilib g++-multilib gcc-mingw-w64
       -
         name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       -
         name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.17
+          go-version: 1.25.x
       -
         name: Run GoReleaser dry run
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
-          args: release --snapshot --skip-publish --rm-dist
+          version: "~> v2"
+          args: release --snapshot --skip=publish --clean

@@ -3,9 +3,9 @@ package vfsdata
 import (
 	"net/http"
 
+	"github.com/appservR/appservR/assets"
 	"github.com/appservR/appservR/modules/config"
-	"github.com/appservR/appservR/modules/vfsdata/assets"
-	"github.com/appservR/appservR/modules/vfsdata/templates"
+	"github.com/appservR/appservR/templates"
 )
 
 type HybridFileSystem struct {

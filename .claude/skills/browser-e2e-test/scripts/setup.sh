@@ -14,6 +14,15 @@ PORT="${APPSERVR_E2E_PORT:-8080}"
 cp -r "$REPO_ROOT/templates" "$SCRATCH/"
 cp -r "$REPO_ROOT/assets" "$SCRATCH/"
 
+# Prove the local-override mechanism (HybridFileSystem in
+# modules/vfsdata/fs.go) still works after the vfsgen -> go:embed migration:
+# an admin can edit a template file directly in the on-disk templates/
+# folder next to the binary and see it served immediately, without
+# rebuilding. Inject a marker into the shared footer, which every page
+# includes (even the pre-auth signup/login pages), and have drive.js assert
+# it's actually rendered rather than the bundled/embedded copy.
+sed -i '/{{define "footer"}}/a <p id="e2e-custom-template-marker" style="display:none">E2E-CUSTOM-TEMPLATE-MARKER</p>' "$SCRATCH/templates/shared/footer.html"
+
 ( cd "$REPO_ROOT" && go build -o "$SCRATCH/appservR" . )
 ( cd "$REPO_ROOT" && go build -o "$SCRATCH/mockshiny" ./modules/appserver/testdata/mockshiny )
 

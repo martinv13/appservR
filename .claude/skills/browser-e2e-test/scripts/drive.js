@@ -85,6 +85,15 @@ function extractPort(body) {
 
   // --- Sign up as the first user -> becomes admin automatically ---
   await page.goto(`${BASE}/auth/signup`);
+  // setup.sh injects a marker into the local (on-disk, next to the binary)
+  // copy of templates/shared/footer.html, which every page includes. Seeing
+  // it rendered here proves modules/vfsdata's HybridFileSystem still prefers
+  // a local template override over the go:embed-bundled copy - the whole
+  // point of the vfsgen -> go:embed migration was to keep this working.
+  assert(
+    (await page.textContent('body')).includes('E2E-CUSTOM-TEMPLATE-MARKER'),
+    'signup page renders the locally-overridden footer template, not the bundled one'
+  );
   await shot(page, 'signup-page');
   await page.fill('input[name="username"]', 'admin');
   await page.fill('input[name="displayedname"]', 'Admin User');

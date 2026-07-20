@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"strings"
 
 	"github.com/appservR/appservR/controllers"
@@ -91,7 +91,7 @@ func loadTemplate(t *template.Template, path string, staticPaths *vfsdata.Static
 				return nil, err
 			}
 			defer file.Close()
-			h, err := ioutil.ReadAll(file)
+			h, err := io.ReadAll(file)
 			if err != nil {
 				return nil, err
 			}

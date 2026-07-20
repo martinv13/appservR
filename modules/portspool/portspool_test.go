@@ -6,12 +6,24 @@ import (
 	"testing"
 )
 
-// resetPool clears global pool state so each test starts from a known baseline.
+// resetPool clears global pool state so each test starts from a known
+// baseline. It also points rangeStart at a high port unlikely to be in real
+// use, since GetNext binds real OS ports: modules/appserver's tests spawn
+// actual subprocesses through this same package's production rangeStart
+// (4000), and go test's default cross-package parallelism can race this
+// package's own tests against those for literal port 4000 on the host.
 func resetPool(t *testing.T) {
 	t.Helper()
 	portsPool.Lock()
 	portsPool.inUse = make(map[string]bool)
+	original := portsPool.rangeStart
+	portsPool.rangeStart = 25000
 	portsPool.Unlock()
+	t.Cleanup(func() {
+		portsPool.Lock()
+		portsPool.rangeStart = original
+		portsPool.Unlock()
+	})
 }
 
 func TestGetNextReturnsFirstFreePort(t *testing.T) {

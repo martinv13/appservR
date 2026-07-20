@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/appservR/appservR/modules/config"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
