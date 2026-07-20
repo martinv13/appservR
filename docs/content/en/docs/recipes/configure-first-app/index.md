@@ -15,11 +15,11 @@ toc: true
 
 Once you're logged in as an admin, go to [http://localhost:8080/admin/apps](http://localhost:8080/admin/apps) and click **New App**. This walks through each field on that form.
 
-![The apps list, with a couple of apps already configured](/images/admin-apps-list.png)
+![The apps list, with a couple of apps already configured](admin-apps-list.png)
 
 ## Main settings
 
-![The new app form, filled in](/images/admin-app-form.png)
+![The new app form, filled in](admin-app-form.png)
 
 * **Name of the app**: letters, numbers, hyphens, and underscores only. This is also the name shown on the apps list.
 * **Path of the app**: where the app is served, for example `/sales-dashboard`. It must start with `/` and can't be `/admin` or `/auth`, since those are reserved for AppservR itself. Several apps can share the same server on different paths, including nested ones (`/` and `/sales-dashboard` and `/sales-dashboard/internal` can all coexist).
@@ -41,4 +41,4 @@ AppservR currently only supports a **local or network directory** as an app's so
 
 Once saved, the app's own page shows the console output of each running worker, which is the first place to look if an app isn't starting (see the "Listening on" line below, confirming the worker actually started).
 
-![An active app's detail page, showing console output from a running worker](/images/admin-app-detail-running.png)
+![An active app's detail page, showing console output from a running worker](admin-app-detail-running.png)
