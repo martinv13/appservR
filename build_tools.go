@@ -5,5 +5,4 @@ package tools
 
 import (
 	_ "github.com/google/wire/cmd/wire"
-	_ "github.com/shurcooL/vfsgen"
 )
