@@ -23,22 +23,6 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
-    # windows-latest's bundled MinGW-w64 GCC now targets the UCRT runtime and
-    # no longer exports __iob_func, which older Go cgo glue (needed to build
-    # github.com/mattn/go-sqlite3, and everything that imports models/) still
-    # requires from the older MSVCRT runtime. Install a GCC build that still
-    # targets MSVCRT and put it first on PATH so cgo links against it instead.
-    - name: Install MSVCRT-runtime MinGW-w64 (Windows only, for cgo/go-sqlite3)
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        $url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/16.1.0posix-14.0.0-msvcrt-r3/winlibs-x86_64-posix-seh-gcc-16.1.0-mingw-w64msvcrt-14.0.0-r3.zip"
-        Invoke-WebRequest -Uri $url -OutFile mingw-msvcrt.zip
-        Expand-Archive -Path mingw-msvcrt.zip -DestinationPath C:\mingw-msvcrt
-        $gccDir = (Get-ChildItem -Path C:\mingw-msvcrt -Recurse -Filter gcc.exe | Select-Object -First 1).DirectoryName
-        if (-not $gccDir) { throw "gcc.exe not found after extracting MinGW-w64 archive" }
-        Write-Host "Adding $gccDir to PATH"
-        Add-Content -Path $env:GITHUB_PATH -Value $gccDir
     - name: Test
       run: |
         go mod tidy
