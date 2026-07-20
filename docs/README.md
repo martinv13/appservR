@@ -5,13 +5,18 @@ Hugo source for the [documentation website](https://appservR.github.io), built w
 
 ## Developing locally
 
+Hugo itself is a standalone binary, not an npm package. `npm install` here doesn't install Hugo
+as a JS dependency — its `postinstall` script (`hugo-installer`) downloads the pinned Hugo binary
+into `node_modules/.bin/hugo`, and the npm scripts below just wrap calls to it (Doks also uses
+Hugo's asset pipeline to run PostCSS/Babel on SCSS/JS, which do come from npm).
+
 From the repository root:
 
 ```sh
 cd docs
 npm install
-npm run start   # dev server with live reload
-npm run build   # production build to docs/public
+npm run start   # runs `hugo server`, with live reload
+npm run build   # runs `hugo --gc --minify`, production build to docs/public
 ```
 
 ## Publishing
