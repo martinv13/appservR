@@ -1,0 +1,74 @@
+site_name: AppservR
+site_url: https://appservR.github.io/
+site_description: AppservR is an open-source program to deploy R Shiny apps on Windows and Linux easily.
+site_author: Martin Vergier
+repo_name: appservR/appservR
+repo_url: https://github.com/appservR/appservR
+edit_uri: edit/main/docs/
+copyright: Copyright (c) 2026 Martin Vergier
+
+nav:
+  - Home: index.md
+  - Introduction:
+      - Welcome: introduction/welcome.md
+      - Quick Start: introduction/quick-start.md
+  - Recipes:
+      - Overview: recipes/index.md
+      - Configure your first app: recipes/configure-first-app/index.md
+      - Customize styling: recipes/customize-styling.md
+      - Install as a service: recipes/install-service.md
+      - Manage user authentication: recipes/manage-auth.md
+      - Configuration reference: recipes/configuration-reference.md
+      - Running in production: recipes/production-considerations.md
+  - Help:
+      - FAQ: help/faq.md
+      - About: help/about.md
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/appservR/appservR

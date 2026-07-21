@@ -32,3 +32,18 @@ Please check out our [Documentation website](https://appservR.github.io) for mor
 [Rstudio](https://rstudio.com) offer professional solutions to Shiny apps' deployment (no free version for multi-process server however). 
 
 [ShinyProxy](https://www.openanalytics.eu/tags/shinyproxy/) is another open-source solution with a different approach as it runs a new Shiny app instance in a new Docker container for every client of your app.
+
+## Documentation website
+
+The [documentation website](https://appservR.github.io) source lives in `mkdocs.yml` and `docs/` and is built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/). To work on it locally:
+
+```sh
+pip install -r requirements-docs.txt
+mkdocs serve   # live-reloading local preview at http://127.0.0.1:8000
+mkdocs build   # production build to ./site
+```
+
+Pushes to `main` that touch `docs/**` or `mkdocs.yml` are built and published automatically by
+[`.github/workflows/deploy-docs.yml`](.github/workflows/deploy-docs.yml), which pushes the built
+site to the `gh-pages` branch of [appservR/appservR.github.io](https://github.com/appservR/appservR.github.io)
+(a machine-generated repository — do not edit it directly).
