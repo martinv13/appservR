@@ -7,6 +7,38 @@ description: AppservR deploys R Shiny apps on Windows and Linux from a single bi
 
 AppservR deploys R Shiny apps on Windows and Linux from a single binary, no admin rights or infrastructure team required.
 
+[Get Started :material-arrow-right:](introduction/welcome.md){ .md-button .md-button--primary }
+
+Open-source MIT Licensed. [GitHub](https://github.com/appservR/appservR)
+
+<div class="grid cards" markdown>
+
+-   **Unlimited apps**
+
+    Serves as many R apps as you need. Each app runs its own Rscript instances, using the R installation on your system.
+
+-   **Access management**
+
+    Authentication included: you can restrict access to each app to specific users and access authenticated user info from within your app.
+
+-   **Hot config**
+
+    Most settings can be configured through a web admin interface and do not require accessing or restarting the server.
+
+-   **Cross-platform**
+
+    Written in the Go programming language, AppservR can run on most platforms. Binaries for Windows and Linux are available.
+
+-   **No dependencies**
+
+    Ships as a standalone binary. No need to run Java or Docker; you will just need a working R installation.
+
+-   **Multi-process**
+
+    Apps with higher traffic can be configured to use multiple processes and balance load between app instances.
+
+</div>
+
 ## Who it's for
 
 AppservR is built for small teams that need to share R Shiny apps with other team members, without a platform team, a container registry, or admin rights on a server to get there. If you can copy a folder onto a Windows or Linux machine and start an executable, you can run AppservR.
